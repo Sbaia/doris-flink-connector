@@ -29,6 +29,7 @@ import org.apache.doris.flink.cfg.DorisReadOptions;
 import org.apache.doris.flink.exception.DorisRuntimeException;
 import org.apache.doris.flink.rest.RestService;
 import org.apache.doris.flink.sink.BackendUtil;
+import org.apache.doris.flink.sink.DorisAbstractCommittable;
 import org.apache.doris.flink.sink.DorisCommittable;
 import org.apache.doris.flink.sink.HttpPutBuilder;
 import org.apache.doris.flink.sink.HttpUtil;
@@ -50,7 +51,7 @@ import java.util.Map;
 import static org.apache.doris.flink.sink.LoadStatus.SUCCESS;
 
 /** The committer to commit transaction. */
-public class DorisCommitter implements Committer<DorisCommittable>, Closeable {
+public class DorisCommitter implements Committer<DorisAbstractCommittable>, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(DorisCommitter.class);
     private static final String commitPattern = "http://%s/api/%s/_stream_load_2pc";
     private final CloseableHttpClient httpClient;
@@ -93,10 +94,10 @@ public class DorisCommitter implements Committer<DorisCommittable>, Closeable {
     }
 
     @Override
-    public void commit(Collection<CommitRequest<DorisCommittable>> requests)
+    public void commit(Collection<CommitRequest<DorisAbstractCommittable>> requests)
             throws IOException, InterruptedException {
-        for (CommitRequest<DorisCommittable> request : requests) {
-            commitTransaction(request.getCommittable());
+        for (CommitRequest<DorisAbstractCommittable> request : requests) {
+            commitTransaction((DorisCommittable) request.getCommittable());
         }
     }
 

@@ -17,7 +17,8 @@
 
 package org.apache.doris.flink.sink;
 
-import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 
 import org.apache.doris.flink.cfg.DorisExecutionOptions;
 import org.apache.doris.flink.cfg.DorisOptions;
@@ -40,6 +41,7 @@ import java.util.Collections;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 public class DorisSinkTest {
 
@@ -56,7 +58,10 @@ public class DorisSinkTest {
         DorisOptions dorisOptions = OptionUtils.buildDorisOptions();
         DorisReadOptions dorisReadOptions = OptionUtils.buildDorisReadOptions();
         DorisRecordSerializer<String> serializer = new SimpleStringSerializer();
-        Sink.InitContext initContext = mock(Sink.InitContext.class);
+        WriterInitContext initContext = mock(WriterInitContext.class);
+        TaskInfo taskInfo = mock(TaskInfo.class);
+        when(initContext.getTaskInfo()).thenReturn(taskInfo);
+        when(taskInfo.getIndexOfThisSubtask()).thenReturn(0);
 
         DorisExecutionOptions dorisExecutionOptions =
                 DorisExecutionOptions.builder().disable2PC().build();

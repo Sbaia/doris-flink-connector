@@ -21,6 +21,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.util.Preconditions;
 
 import org.apache.doris.flink.cfg.DorisExecutionOptions;
@@ -50,7 +51,7 @@ public class DorisBatchSink<IN> implements Sink<IN> {
     }
 
     @Override
-    public SinkWriter<IN> createWriter(InitContext initContext) throws IOException {
+    public SinkWriter<IN> createWriter(WriterInitContext initContext) throws IOException {
         DorisBatchWriter<IN> dorisBatchWriter =
                 new DorisBatchWriter<IN>(
                         initContext,

@@ -18,12 +18,19 @@
 package org.apache.doris.flink.sink.writer;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
 /** test for RecordBuffer. */
 public class TestRecordBuffer {
+
+    @Before
+    public void setUp() {
+        // Clear any lingering interrupt flag from previous tests
+        Thread.interrupted();
+    }
 
     @Test
     public void testStopBufferData() throws Exception {

@@ -17,12 +17,12 @@
 
 package org.apache.doris.flink.table;
 
-import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.sink.SinkV2Provider;
 import org.apache.flink.table.connector.sink.abilities.SupportsOverwrite;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.util.Preconditions;
 
 import org.apache.doris.flink.cfg.DorisExecutionOptions;
@@ -56,7 +56,8 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
     private final DorisOptions options;
     private final DorisReadOptions readOptions;
     private final DorisExecutionOptions executionOptions;
-    private final TableSchema tableSchema;
+    private final String[] fieldNames;
+    private final DataType[] fieldTypes;
     private final Integer sinkParallelism;
     private boolean overwrite = false;
 
@@ -64,12 +65,14 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
             DorisOptions options,
             DorisReadOptions readOptions,
             DorisExecutionOptions executionOptions,
-            TableSchema tableSchema,
+            String[] fieldNames,
+            DataType[] fieldTypes,
             Integer sinkParallelism) {
         this.options = options;
         this.readOptions = readOptions;
         this.executionOptions = executionOptions;
-        this.tableSchema = tableSchema;
+        this.fieldNames = fieldNames;
+        this.fieldTypes = fieldTypes;
         this.sinkParallelism = sinkParallelism;
     }
 
@@ -89,7 +92,6 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
                 executionOptions.getDeletable()
                         && RestService.isUniqueKeyType(options, readOptions, LOG);
         if (!loadProperties.containsKey(COLUMNS_KEY)) {
-            String[] fieldNames = tableSchema.getFieldNames();
             Preconditions.checkState(fieldNames != null && fieldNames.length > 0);
             String columns =
                     String.join(
@@ -108,8 +110,8 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
 
         RowDataSerializer.Builder serializerBuilder = RowDataSerializer.builder();
         serializerBuilder
-                .setFieldNames(tableSchema.getFieldNames())
-                .setFieldType(tableSchema.getFieldDataTypes())
+                .setFieldNames(fieldNames)
+                .setFieldType(fieldTypes)
                 .setType(loadProperties.getProperty(FORMAT_KEY, CSV))
                 .enableDelete(deletable)
                 .setFieldDelimiter(
@@ -158,7 +160,7 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
     public DynamicTableSink copy() {
         DorisDynamicTableSink sink =
                 new DorisDynamicTableSink(
-                        options, readOptions, executionOptions, tableSchema, sinkParallelism);
+                        options, readOptions, executionOptions, fieldNames, fieldTypes, sinkParallelism);
         sink.overwrite = overwrite;
         return sink;
     }
@@ -180,15 +182,18 @@ public class DorisDynamicTableSink implements DynamicTableSink, SupportsOverwrit
         return Objects.equals(options, that.options)
                 && Objects.equals(readOptions, that.readOptions)
                 && Objects.equals(executionOptions, that.executionOptions)
-                && Objects.equals(tableSchema, that.tableSchema)
+                && Arrays.equals(fieldNames, that.fieldNames)
+                && Arrays.equals(fieldTypes, that.fieldTypes)
                 && Objects.equals(sinkParallelism, that.sinkParallelism)
                 && Objects.equals(overwrite, that.overwrite);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                options, readOptions, executionOptions, tableSchema, sinkParallelism, overwrite);
+        int result = Objects.hash(options, readOptions, executionOptions, sinkParallelism, overwrite);
+        result = 31 * result + Arrays.hashCode(fieldNames);
+        result = 31 * result + Arrays.hashCode(fieldTypes);
+        return result;
     }
 
     @Override

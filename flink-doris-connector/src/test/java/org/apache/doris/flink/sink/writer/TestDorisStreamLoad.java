@@ -54,6 +54,8 @@ public class TestDorisStreamLoad {
 
     @Before
     public void setUp() throws Exception {
+        // Clear any lingering interrupt flag from previous tests
+        Thread.interrupted();
         dorisOptions = OptionUtils.buildDorisOptions();
         readOptions = OptionUtils.buildDorisReadOptions();
         executionOptions = OptionUtils.buildExecutionOptional();

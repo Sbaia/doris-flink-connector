@@ -18,7 +18,7 @@
 package org.apache.doris.flink.sink.writer;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointIDCounter;
 
@@ -78,7 +78,7 @@ public class DorisWriter<IN>
     private volatile boolean multiTableLoad = false;
 
     public DorisWriter(
-            Sink.InitContext initContext,
+            WriterInitContext initContext,
             Collection<DorisWriterState> state,
             DorisRecordSerializer<IN> serializer,
             DorisOptions dorisOptions,
@@ -92,7 +92,7 @@ public class DorisWriter<IN>
         LOG.info("restore from checkpointId {}", lastCheckpointId);
         LOG.info("labelPrefix {}", executionOptions.getLabelPrefix());
         this.labelPrefix = executionOptions.getLabelPrefix();
-        this.subtaskId = initContext.getSubtaskId();
+        this.subtaskId = initContext.getTaskInfo().getIndexOfThisSubtask();
         this.scheduledExecutorService =
                 new ScheduledThreadPoolExecutor(
                         1,

@@ -18,19 +18,17 @@
 package org.apache.doris.flink.table;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.Projection;
-import org.apache.flink.table.connector.source.AsyncTableFunctionProvider;
 import org.apache.flink.table.connector.source.DynamicTableSource;
-import org.apache.flink.table.connector.source.InputFormatProvider;
 import org.apache.flink.table.connector.source.LookupTableSource;
 import org.apache.flink.table.connector.source.ScanTableSource;
 import org.apache.flink.table.connector.source.SourceProvider;
-import org.apache.flink.table.connector.source.TableFunctionProvider;
 import org.apache.flink.table.connector.source.abilities.SupportsFilterPushDown;
 import org.apache.flink.table.connector.source.abilities.SupportsLimitPushDown;
 import org.apache.flink.table.connector.source.abilities.SupportsProjectionPushDown;
+import org.apache.flink.table.connector.source.lookup.AsyncLookupFunctionProvider;
+import org.apache.flink.table.connector.source.lookup.LookupFunctionProvider;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.expressions.ResolvedExpression;
 import org.apache.flink.table.types.DataType;
@@ -41,9 +39,6 @@ import org.apache.doris.flink.cfg.DorisLookupOptions;
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.cfg.DorisReadOptions;
 import org.apache.doris.flink.deserialization.RowDataDeserializationSchema;
-import org.apache.doris.flink.exception.DorisException;
-import org.apache.doris.flink.rest.PartitionDefinition;
-import org.apache.doris.flink.rest.RestService;
 import org.apache.doris.flink.source.DorisSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +61,8 @@ public final class DorisDynamicTableSource
     private final DorisOptions options;
     private final DorisReadOptions readOptions;
     private DorisLookupOptions lookupOptions;
-    private TableSchema physicalSchema;
+    private final String[] fieldNames;
+    private final DataType[] fieldTypes;
     private List<String> resolvedFilterQuery = new ArrayList<>();
     private DataType physicalRowDataType;
 
@@ -74,12 +70,14 @@ public final class DorisDynamicTableSource
             DorisOptions options,
             DorisReadOptions readOptions,
             DorisLookupOptions lookupOptions,
-            TableSchema physicalSchema,
+            String[] fieldNames,
+            DataType[] fieldTypes,
             DataType physicalRowDataType) {
         this.options = options;
         this.lookupOptions = lookupOptions;
         this.readOptions = readOptions;
-        this.physicalSchema = physicalSchema;
+        this.fieldNames = fieldNames;
+        this.fieldTypes = fieldTypes;
         this.physicalRowDataType = physicalRowDataType;
     }
 
@@ -110,36 +108,16 @@ public final class DorisDynamicTableSource
                             .collect(Collectors.joining(", ")));
         }
 
-        if (readOptions.getUseOldApi()) {
-            List<PartitionDefinition> dorisPartitions;
-            try {
-                dorisPartitions = RestService.findPartitions(options, readOptions, LOG);
-            } catch (DorisException e) {
-                throw new RuntimeException("Failed fetch doris partitions");
-            }
-            DorisRowDataInputFormat.Builder builder =
-                    DorisRowDataInputFormat.builder()
-                            .setFenodes(options.getFenodes())
-                            .setBenodes(options.getBenodes())
-                            .setUsername(options.getUsername())
-                            .setPassword(options.getPassword())
-                            .setTableIdentifier(options.getTableIdentifier())
-                            .setPartitions(dorisPartitions)
-                            .setReadOptions(readOptions)
-                            .setRowType((RowType) physicalRowDataType.getLogicalType());
-            return InputFormatProvider.of(builder.build());
-        } else {
-            // Read data using the interface of the FLIP-27 specification
-            DorisSource<RowData> build =
-                    DorisSource.<RowData>builder()
-                            .setDorisReadOptions(readOptions)
-                            .setDorisOptions(options)
-                            .setDeserializer(
-                                    new RowDataDeserializationSchema(
-                                            (RowType) physicalRowDataType.getLogicalType()))
-                            .build();
-            return SourceProvider.of(build);
-        }
+        // Read data using the interface of the FLIP-27 specification
+        DorisSource<RowData> build =
+                DorisSource.<RowData>builder()
+                        .setDorisReadOptions(readOptions)
+                        .setDorisOptions(options)
+                        .setDeserializer(
+                                new RowDataDeserializationSchema(
+                                        (RowType) physicalRowDataType.getLogicalType()))
+                        .build();
+        return SourceProvider.of(build);
     }
 
     @Override
@@ -152,7 +130,7 @@ public final class DorisDynamicTableSource
             keyIndexs[i] = innerKeyArr[0];
         }
         if (lookupOptions.isAsync()) {
-            return AsyncTableFunctionProvider.of(
+            return AsyncLookupFunctionProvider.of(
                     new DorisRowDataAsyncLookupFunction(
                             options,
                             lookupOptions,
@@ -162,7 +140,7 @@ public final class DorisDynamicTableSource
                             keyNames,
                             keyIndexs));
         } else {
-            return TableFunctionProvider.of(
+            return LookupFunctionProvider.of(
                     new DorisRowDataJdbcLookupFunction(
                             options,
                             lookupOptions,
@@ -182,7 +160,8 @@ public final class DorisDynamicTableSource
                         options,
                         readOptions.copy(),
                         lookupOptions,
-                        physicalSchema,
+                        fieldNames,
+                        fieldTypes,
                         physicalRowDataType);
         newSource.resolvedFilterQuery = new ArrayList<>(this.resolvedFilterQuery);
         return newSource;
@@ -243,20 +222,23 @@ public final class DorisDynamicTableSource
         return Objects.equals(options, that.options)
                 && Objects.equals(readOptions, that.readOptions)
                 && Objects.equals(lookupOptions, that.lookupOptions)
-                && Objects.equals(physicalSchema, that.physicalSchema)
+                && Arrays.equals(fieldNames, that.fieldNames)
+                && Arrays.equals(fieldTypes, that.fieldTypes)
                 && Objects.equals(resolvedFilterQuery, that.resolvedFilterQuery)
                 && Objects.equals(physicalRowDataType, that.physicalRowDataType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
+        int result = Objects.hash(
                 options,
                 readOptions,
                 lookupOptions,
-                physicalSchema,
                 resolvedFilterQuery,
                 physicalRowDataType);
+        result = 31 * result + Arrays.hashCode(fieldNames);
+        result = 31 * result + Arrays.hashCode(fieldTypes);
+        return result;
     }
 
     @Override

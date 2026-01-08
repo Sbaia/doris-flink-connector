@@ -21,7 +21,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.FunctionContext;
-import org.apache.flink.table.functions.TableFunction;
+import org.apache.flink.table.functions.LookupFunction;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.util.Preconditions;
 
@@ -37,12 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** use jdbc to query. */
-public class DorisRowDataJdbcLookupFunction extends TableFunction<RowData> {
+public class DorisRowDataJdbcLookupFunction extends LookupFunction {
     private static final Logger LOG = LoggerFactory.getLogger(DorisRowDataJdbcLookupFunction.class);
     private final DorisOptions options;
     private final DorisLookupOptions lookupOptions;
@@ -89,13 +90,8 @@ public class DorisRowDataJdbcLookupFunction extends TableFunction<RowData> {
         this.lookupMetrics = new LookupMetrics(context.getMetricGroup());
     }
 
-    /**
-     * This is a lookup method which is called by Flink framework in runtime.
-     *
-     * @param keys lookup keys
-     */
-    public void eval(Object... keys) throws IOException {
-        RowData keyRow = GenericRowData.of(keys);
+    @Override
+    public Collection<RowData> lookup(RowData keyRow) {
         if (cache != null) {
             List<RowData> cachedRows = cache.getIfPresent(keyRow);
             if (cachedRows != null) {
@@ -103,27 +99,28 @@ public class DorisRowDataJdbcLookupFunction extends TableFunction<RowData> {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("lookup cache hit for key: {}", keyRow);
                 }
-                for (RowData cachedRow : cachedRows) {
-                    collect(cachedRow);
-                }
-                return;
+                return cachedRows;
             } else {
                 lookupMetrics.incMissCount();
             }
         }
-        queryRecord(keyRow);
+        return queryRecord(keyRow);
     }
 
-    private void queryRecord(RowData keyRow) throws IOException {
-        List<RowData> rowData = lookupReader.get(keyRow);
-        if (rowData == null) {
-            rowData = Collections.emptyList();
+    private Collection<RowData> queryRecord(RowData keyRow) {
+        try {
+            List<RowData> rowData = lookupReader.get(keyRow);
+            if (rowData == null) {
+                rowData = Collections.emptyList();
+            }
+            if (cache != null) {
+                cache.put(keyRow, rowData);
+                lookupMetrics.incLoadCount();
+            }
+            return rowData;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to lookup from Doris", e);
         }
-        if (cache != null) {
-            cache.put(keyRow, rowData);
-            lookupMetrics.incLoadCount();
-        }
-        rowData.forEach(this::collect);
     }
 
     @Override

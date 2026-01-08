@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.doris.flink.sink.writer.serializer.RowDataSerializer;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,6 +47,12 @@ public class TestRowDataSerializer {
     static GenericRowData rowData;
     static DataType[] dataTypes;
     static String[] fieldNames;
+
+    @Before
+    public void clearInterrupt() {
+        // Clear any lingering interrupt flag from previous tests
+        Thread.interrupted();
+    }
 
     @BeforeClass
     public static void setUp() {

@@ -23,6 +23,7 @@ import org.apache.flink.util.CollectionUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.doris.flink.cfg.DorisOptions;
+import org.apache.doris.flink.sink.DorisAbstractCommittable;
 import org.apache.doris.flink.exception.CopyLoadException;
 import org.apache.doris.flink.sink.HttpUtil;
 import org.apache.doris.flink.sink.ResponseUtil;
@@ -42,7 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DorisCopyCommitter implements Committer<DorisCopyCommittable>, Closeable {
+public class DorisCopyCommitter implements Committer<DorisAbstractCommittable>, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(DorisCopyCommitter.class);
     private static final String commitPattern = "http://%s/copy/query";
     private static final int SUCCESS = 0;
@@ -65,10 +66,10 @@ public class DorisCopyCommitter implements Committer<DorisCopyCommittable>, Clos
     }
 
     @Override
-    public void commit(Collection<CommitRequest<DorisCopyCommittable>> committableList)
+    public void commit(Collection<CommitRequest<DorisAbstractCommittable>> committableList)
             throws IOException, InterruptedException {
-        for (CommitRequest<DorisCopyCommittable> committable : committableList) {
-            commitTransaction(committable.getCommittable());
+        for (CommitRequest<DorisAbstractCommittable> committable : committableList) {
+            commitTransaction((DorisCopyCommittable) committable.getCommittable());
         }
     }
 

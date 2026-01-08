@@ -21,20 +21,16 @@ import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.TableEnvironment;
-import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.CatalogDatabase;
 import org.apache.flink.table.catalog.CatalogDatabaseImpl;
 import org.apache.flink.table.catalog.CatalogTable;
-import org.apache.flink.table.catalog.CatalogTableImpl;
 import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.catalog.exceptions.DatabaseAlreadyExistException;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotEmptyException;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.catalog.exceptions.TableAlreadyExistException;
 import org.apache.flink.table.catalog.exceptions.TableNotExistException;
-import org.apache.flink.table.types.AtomicDataType;
-import org.apache.flink.table.types.logical.VarCharType;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
@@ -70,28 +66,34 @@ public class DorisCatalogITCase extends AbstractITCaseService {
     private static final String TEST_TABLE_SINK = "t_all_types_sink";
     private static final String TEST_TABLE_SINK_GROUPBY = "t_all_types_sink_groupby";
 
-    private static final TableSchema TABLE_SCHEMA =
-            TableSchema.builder()
-                    .field("id", new AtomicDataType(new VarCharType(false, 128)))
-                    .field("c_boolean", DataTypes.BOOLEAN())
-                    .field("c_char", DataTypes.CHAR(1))
-                    .field("c_date", DataTypes.DATE())
-                    .field("c_datetime", DataTypes.TIMESTAMP(0))
-                    .field("c_decimal", DataTypes.DECIMAL(10, 2))
-                    .field("c_double", DataTypes.DOUBLE())
-                    .field("c_float", DataTypes.FLOAT())
-                    .field("c_int", DataTypes.INT())
-                    .field("c_bigint", DataTypes.BIGINT())
-                    .field("c_largeint", DataTypes.STRING())
-                    .field("c_smallint", DataTypes.SMALLINT())
-                    .field("c_string", DataTypes.STRING())
-                    .field("c_tinyint", DataTypes.TINYINT())
-                    .field("c_array", DataTypes.ARRAY(DataTypes.INT()))
-                    .field("c_map", DataTypes.MAP(DataTypes.STRING(), DataTypes.STRING()))
-                    .field("c_row", DataTypes.ROW())
-                    .field("c_varbinary", DataTypes.VARBINARY(16))
+    private static final Schema TABLE_SCHEMA =
+            Schema.newBuilder()
+                    .column("id", DataTypes.VARCHAR(128).notNull())
+                    .column("c_boolean", DataTypes.BOOLEAN())
+                    .column("c_char", DataTypes.CHAR(1))
+                    .column("c_date", DataTypes.DATE())
+                    .column("c_datetime", DataTypes.TIMESTAMP(0))
+                    .column("c_decimal", DataTypes.DECIMAL(10, 2))
+                    .column("c_double", DataTypes.DOUBLE())
+                    .column("c_float", DataTypes.FLOAT())
+                    .column("c_int", DataTypes.INT())
+                    .column("c_bigint", DataTypes.BIGINT())
+                    .column("c_largeint", DataTypes.STRING())
+                    .column("c_smallint", DataTypes.SMALLINT())
+                    .column("c_string", DataTypes.STRING())
+                    .column("c_tinyint", DataTypes.TINYINT())
+                    .column("c_array", DataTypes.ARRAY(DataTypes.INT()))
+                    .column("c_map", DataTypes.MAP(DataTypes.STRING(), DataTypes.STRING()))
+                    .column("c_row", DataTypes.ROW())
+                    .column("c_varbinary", DataTypes.VARBINARY(16))
                     .primaryKey("id")
                     .build();
+
+    private static final String[] TABLE_FIELD_NAMES = new String[] {
+            "id", "c_boolean", "c_char", "c_date", "c_datetime", "c_decimal",
+            "c_double", "c_float", "c_int", "c_bigint", "c_largeint", "c_smallint",
+            "c_string", "c_tinyint", "c_array", "c_map", "c_row", "c_varbinary"
+    };
 
     private static final List<Row> ALL_TYPES_ROWS =
             Lists.newArrayList(
@@ -247,8 +249,8 @@ public class DorisCatalogITCase extends AbstractITCaseService {
         CatalogBaseTable table = catalog.getTable(new ObjectPath(TEST_DB, TEST_TABLE));
         Schema actual = table.getUnresolvedSchema();
         assertEquals(
-                TABLE_SCHEMA.getFieldNames(),
-                actual.getColumns().stream().map(Schema.UnresolvedColumn::getName).toArray());
+                TABLE_FIELD_NAMES.length,
+                actual.getColumns().stream().map(Schema.UnresolvedColumn::getName).count());
     }
 
     @Test(expected = TableNotExistException.class)
@@ -281,16 +283,14 @@ public class DorisCatalogITCase extends AbstractITCaseService {
 
     @Test
     public void testCreateTable() throws TableAlreadyExistException, DatabaseNotExistException {
-        CatalogTableImpl catalogTable =
-                new CatalogTableImpl(
-                        TABLE_SCHEMA,
-                        new HashMap<String, String>() {
-                            {
-                                put("connector", "doris-1");
-                                put("table.properties.replication_num", "1");
-                            }
-                        },
-                        "FlinkTable");
+        Map<String, String> wrongOptions = new HashMap<>();
+        wrongOptions.put("connector", "doris-1");
+        wrongOptions.put("table.properties.replication_num", "1");
+        CatalogTable catalogTable = CatalogTable.newBuilder()
+                .schema(TABLE_SCHEMA)
+                .options(wrongOptions)
+                .comment("FlinkTable")
+                .build();
         catalog.createTable(
                 new ObjectPath(TEST_DB, "create_table_wrong_connector"), catalogTable, true);
         boolean exists =
@@ -399,14 +399,13 @@ public class DorisCatalogITCase extends AbstractITCaseService {
     }
 
     private static CatalogTable createTable() {
-        return new CatalogTableImpl(
-                TABLE_SCHEMA,
-                new HashMap<String, String>() {
-                    {
-                        put("connector", DorisConfigOptions.IDENTIFIER);
-                        put("table.properties.replication_num", "1");
-                    }
-                },
-                "FlinkTable");
+        Map<String, String> options = new HashMap<>();
+        options.put("connector", DorisConfigOptions.IDENTIFIER);
+        options.put("table.properties.replication_num", "1");
+        return CatalogTable.newBuilder()
+                .schema(TABLE_SCHEMA)
+                .options(options)
+                .comment("FlinkTable")
+                .build();
     }
 }

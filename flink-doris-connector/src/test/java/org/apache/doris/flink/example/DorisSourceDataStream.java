@@ -22,13 +22,10 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.cfg.DorisReadOptions;
-import org.apache.doris.flink.cfg.DorisStreamOptions;
-import org.apache.doris.flink.datastream.DorisSourceFunction;
 import org.apache.doris.flink.deserialization.SimpleListDeserializationSchema;
 import org.apache.doris.flink.source.DorisSource;
 
 import java.util.List;
-import java.util.Properties;
 
 public class DorisSourceDataStream {
 
@@ -84,20 +81,5 @@ public class DorisSourceDataStream {
 
         env.fromSource(dorisSource, WatermarkStrategy.noWatermarks(), "doris source").print();
         env.execute("Doris Source Test");
-    }
-
-    public static void useSourceFunctionRead() throws Exception {
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        Properties properties = new Properties();
-        properties.put("fenodes", "127.0.0.1:8030");
-        properties.put("username", "root");
-        properties.put("password", "");
-        properties.put("table.identifier", "test.students");
-        DorisStreamOptions options = new DorisStreamOptions(properties);
-
-        env.setParallelism(2);
-        env.addSource(new DorisSourceFunction(options, new SimpleListDeserializationSchema()))
-                .print();
-        env.execute("Flink doris test");
     }
 }

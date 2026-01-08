@@ -36,9 +36,11 @@ jobs:
       uses: actions/setup-java@v2
       with:
         distribution: adopt
-        java-version: '8'
+        java-version: '11'
 
     - name: Run E2ECases
       run: |
-        cd flink-doris-connector && mvn test -Dtest="*E2ECase" -Dimage="apache/doris:doris-all-in-one-2.1.0"
+        cd flink-doris-connector && mvn test -Dtest="*E2ECase" -Dimage="apache/doris:doris-all-in-one-2.1.0" \
+          -Dflink.version=2.0.0 \
+          -Dflink.major.version=2.0
 

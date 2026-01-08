@@ -71,8 +71,8 @@ fi
 [ -z "$_RUNJAVAP" ] && _RUNJAVAP="$JAVA_HOME"/bin/javap
 
 JAVA_VER=$(${_RUNJAVAP} -verbose java.lang.String | grep "major version" | cut -d " " -f5)
-if [[ $JAVA_VER -lt 52 ]]; then
-    echo "Error: require JAVA with JDK version at least 1.8"
+if [[ $JAVA_VER -lt 55 ]]; then
+    echo "Error: require JAVA with JDK version at least 11"
     exit 1
 fi
 

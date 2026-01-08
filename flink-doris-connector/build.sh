@@ -115,27 +115,12 @@ if [[ -f ${DORIS_HOME}/custom_env.sh ]]; then
 fi
 
 selectFlink() {
-  echo 'Flink-Doris-Connector supports multiple versions of flink. Which version do you need ?'
-  select flink in "1.15.x" "1.16.x" "1.17.x" "1.18.x" "1.19.x" "1.20.x"
+  echo 'Flink-Doris-Connector for Flink 2.x. Which version do you need ?'
+  select flink in "2.0.x"
   do
     case $flink in
-      "1.15.x")
+      "2.0.x")
         return 1
-        ;;
-      "1.16.x")
-        return 2
-        ;;
-      "1.17.x")
-        return 3
-        ;;
-      "1.18.x")
-        return 4
-        ;;
-      "1.19.x")
-        return 5
-        ;;
-      "1.20.x")
-        return 6
         ;;
       *)
         echo "invalid selected, exit.."
@@ -150,18 +135,7 @@ selectFlink
 flinkVer=$?
 FLINK_PYTHON_ID="flink-python"
 if [ ${flinkVer} -eq 1 ]; then
-    FLINK_VERSION="1.15.0"
-    FLINK_PYTHON_ID="flink-python_2.12"
-elif [ ${flinkVer} -eq 2 ]; then
-    FLINK_VERSION="1.16.0"
-elif [ ${flinkVer} -eq 3 ]; then
-    FLINK_VERSION="1.17.0"
-elif [ ${flinkVer} -eq 4 ]; then
-    FLINK_VERSION="1.18.0"
-elif [ ${flinkVer} -eq 5 ]; then
-    FLINK_VERSION="1.19.0"
-elif [ ${flinkVer} -eq 6 ]; then
-    FLINK_VERSION="1.20.0"
+    FLINK_VERSION="2.0.0"
 fi
 
 # extract major version:

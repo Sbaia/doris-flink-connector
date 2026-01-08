@@ -227,8 +227,10 @@ public class DorisCatalog extends AbstractCatalog {
         props.put(SINK_LABEL_PREFIX.key(), String.join("_", labelPrefix, databaseName, tableName));
         // remove catalog option
         props.remove(DEFAULT_DATABASE.key());
-        return CatalogTable.of(
-                createTableSchema(databaseName, tableName), null, Lists.newArrayList(), props);
+        return CatalogTable.newBuilder()
+                .schema(createTableSchema(databaseName, tableName))
+                .options(props)
+                .build();
     }
 
     @VisibleForTesting
@@ -353,12 +355,13 @@ public class DorisCatalog extends AbstractCatalog {
             return;
         }
 
-        List<String> primaryKeys = getCreateDorisKeys(table.getSchema());
+        Schema unresolvedSchema = table.getUnresolvedSchema();
+        List<String> primaryKeys = getCreateDorisKeys(unresolvedSchema);
         TableSchema schema =
                 DorisSchemaFactory.createTableSchema(
                         tablePath.getDatabaseName(),
                         tablePath.getObjectName(),
-                        getCreateDorisColumns(table.getSchema()),
+                        getCreateDorisColumns(unresolvedSchema),
                         primaryKeys,
                         new DorisTableConfig(getCreateTableProps(options)),
                         table.getComment());
@@ -366,22 +369,23 @@ public class DorisCatalog extends AbstractCatalog {
         dorisSystem.createTable(schema);
     }
 
-    public List<String> getCreateDorisKeys(org.apache.flink.table.api.TableSchema schema) {
+    public List<String> getCreateDorisKeys(Schema schema) {
         Preconditions.checkState(schema.getPrimaryKey().isPresent(), "primary key cannot be null");
-        return schema.getPrimaryKey().get().getColumns();
+        return schema.getPrimaryKey().get().getColumnNames();
     }
 
-    public Map<String, FieldSchema> getCreateDorisColumns(
-            org.apache.flink.table.api.TableSchema schema) {
-        String[] fieldNames = schema.getFieldNames();
-        DataType[] fieldTypes = schema.getFieldDataTypes();
-
+    public Map<String, FieldSchema> getCreateDorisColumns(Schema schema) {
         Map<String, FieldSchema> fields = new LinkedHashMap<>();
-        for (int i = 0; i < fieldNames.length; i++) {
-            fields.put(
-                    fieldNames[i],
-                    new FieldSchema(
-                            fieldNames[i], DorisTypeMapper.toDorisType(fieldTypes[i]), null));
+        for (Schema.UnresolvedColumn column : schema.getColumns()) {
+            if (column instanceof Schema.UnresolvedPhysicalColumn) {
+                Schema.UnresolvedPhysicalColumn physicalColumn =
+                        (Schema.UnresolvedPhysicalColumn) column;
+                String fieldName = physicalColumn.getName();
+                DataType dataType = (DataType) physicalColumn.getDataType();
+                fields.put(
+                        fieldName,
+                        new FieldSchema(fieldName, DorisTypeMapper.toDorisType(dataType), null));
+            }
         }
         return fields;
     }

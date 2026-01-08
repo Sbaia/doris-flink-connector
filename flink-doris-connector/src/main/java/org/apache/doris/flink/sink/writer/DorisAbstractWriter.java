@@ -17,10 +17,10 @@
 
 package org.apache.doris.flink.sink.writer;
 
-import org.apache.flink.api.connector.sink2.StatefulSink;
-import org.apache.flink.api.connector.sink2.TwoPhaseCommittingSink;
+import org.apache.flink.api.connector.sink2.CommittingSinkWriter;
+import org.apache.flink.api.connector.sink2.StatefulSinkWriter;
 
 /** Abstract for different Doris Writer: Stream Load, Copy ... */
 public interface DorisAbstractWriter<InputT, WriterStateT, CommT>
-        extends StatefulSink.StatefulSinkWriter<InputT, WriterStateT>,
-                TwoPhaseCommittingSink.PrecommittingSinkWriter<InputT, CommT> {}
+        extends StatefulSinkWriter<InputT, WriterStateT>,
+                CommittingSinkWriter<InputT, CommT> {}

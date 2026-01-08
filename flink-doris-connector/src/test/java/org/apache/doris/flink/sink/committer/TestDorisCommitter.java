@@ -24,6 +24,7 @@ import org.apache.doris.flink.exception.DorisRuntimeException;
 import org.apache.doris.flink.rest.RestService;
 import org.apache.doris.flink.rest.models.BackendV2;
 import org.apache.doris.flink.sink.BackendUtil;
+import org.apache.doris.flink.sink.DorisAbstractCommittable;
 import org.apache.doris.flink.sink.DorisCommittable;
 import org.apache.doris.flink.sink.HttpEntityMock;
 import org.apache.doris.flink.sink.OptionUtils;
@@ -96,7 +97,7 @@ public class TestDorisCommitter {
                         + "\"msg\": \"errCode = 2, detailMessage = transaction [2] is already visible, not pre-committed.\"\n"
                         + "}";
         this.entityMock.setValue(response);
-        final MockCommitRequest<DorisCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(dorisCommittable);
         dorisCommitter.commit(Collections.singletonList(request));
     }
@@ -114,7 +115,7 @@ public class TestDorisCommitter {
                         + "\"msg\": \"errCode = 2, detailMessage = transaction [25] is already aborted. abort reason: User Abort\"\n"
                         + "}";
         this.entityMock.setValue(response);
-        final MockCommitRequest<DorisCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(dorisCommittable);
         dorisCommitter.commit(Collections.singletonList(request));
     }
@@ -127,7 +128,7 @@ public class TestDorisCommitter {
         thrown.expectMessage("commit transaction error");
 
         this.entityMock.setValue("404");
-        final MockCommitRequest<DorisCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(dorisCommittable);
         dorisCommitter.commit(Collections.singletonList(request));
     }
@@ -139,7 +140,7 @@ public class TestDorisCommitter {
         thrown.expect(DorisRuntimeException.class);
         thrown.expectMessage("commit transaction error");
 
-        final MockCommitRequest<DorisCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(dorisCommittable);
         dorisCommitter.commit(Collections.singletonList(request));
     }
@@ -159,7 +160,7 @@ public class TestDorisCommitter {
         when(httpClient.execute(any())).thenReturn(httpResponse);
         dorisCommitter =
                 new DorisCommitter(dorisOptions, readOptions, executionOptions, httpClient);
-        final MockCommitRequest<DorisCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(dorisCommittable);
         dorisCommitter.commit(Collections.singletonList(request));
     }

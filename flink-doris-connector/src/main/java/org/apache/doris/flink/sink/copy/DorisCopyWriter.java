@@ -18,7 +18,7 @@
 package org.apache.doris.flink.sink.copy;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.runtime.checkpoint.CheckpointIDCounter;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.StringUtils;
@@ -65,7 +65,7 @@ public class DorisCopyWriter<IN>
     private String table;
 
     public DorisCopyWriter(
-            Sink.InitContext initContext,
+            WriterInitContext initContext,
             DorisRecordSerializer<IN> serializer,
             DorisOptions dorisOptions,
             DorisReadOptions dorisReadOptions,
@@ -88,7 +88,7 @@ public class DorisCopyWriter<IN>
                 executionOptions.getLabelPrefix()
                         + "_"
                         + UUID.randomUUID().toString().replaceAll("-", "");
-        this.labelGenerator = new LabelGenerator(labelPrefix, false, initContext.getSubtaskId());
+        this.labelGenerator = new LabelGenerator(labelPrefix, false, initContext.getTaskInfo().getIndexOfThisSubtask());
         this.scheduledExecutorService =
                 new ScheduledThreadPoolExecutor(
                         1, new ExecutorThreadFactory("copy-upload-interval"));

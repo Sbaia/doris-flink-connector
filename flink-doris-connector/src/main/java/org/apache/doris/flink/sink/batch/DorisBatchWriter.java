@@ -17,7 +17,7 @@
 
 package org.apache.doris.flink.sink.batch;
 
-import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.runtime.checkpoint.CheckpointIDCounter;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.StringUtils;
@@ -63,7 +63,7 @@ public class DorisBatchWriter<IN>
     private int subtaskId;
 
     public DorisBatchWriter(
-            Sink.InitContext initContext,
+            WriterInitContext initContext,
             DorisRecordSerializer<IN> serializer,
             DorisOptions dorisOptions,
             DorisReadOptions dorisReadOptions,
@@ -84,8 +84,8 @@ public class DorisBatchWriter<IN>
         }
 
         LOG.info("labelPrefix " + executionOptions.getLabelPrefix());
-        this.subtaskId = initContext.getSubtaskId();
-        this.labelPrefix = executionOptions.getLabelPrefix() + "_" + initContext.getSubtaskId();
+        this.subtaskId = initContext.getTaskInfo().getIndexOfThisSubtask();
+        this.labelPrefix = executionOptions.getLabelPrefix() + "_" + initContext.getTaskInfo().getIndexOfThisSubtask();
         this.labelGenerator = new LabelGenerator(labelPrefix, false);
         this.scheduledExecutorService =
                 new ScheduledThreadPoolExecutor(

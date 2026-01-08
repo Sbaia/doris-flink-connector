@@ -68,8 +68,8 @@ under the License.
 
     <properties>
         <revision>25.1.0-SNAPSHOT</revision>
-        <flink.version>1.18.0</flink.version>
-        <flink.major.version>1.18</flink.major.version>
+        <flink.version>2.0.0</flink.version>
+        <flink.major.version>2.0</flink.major.version>
         <flink.sql.cdc.version>3.2.1</flink.sql.cdc.version>
         <flink.python.id>flink-python</flink.python.id>
         <libthrift.version>0.16.0</libthrift.version>
@@ -502,8 +502,8 @@ under the License.
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>8</source>
-                        <target>8</target>
+                        <source>11</source>
+                        <target>11</target>
                     </configuration>
                 </plugin>
 
@@ -513,7 +513,7 @@ under the License.
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <skip>true</skip>
-                        <source>8</source>
+                        <source>11</source>
                         <failOnError>false</failOnError>
                     </configuration>
                     <executions>
@@ -576,6 +576,8 @@ under the License.
                 <configuration>
                     <!-- Activate the use of TCP to transmit events to the plugin -->
                     <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <!-- JVM flags required for Apache Arrow with Java 11+ -->
+                    <argLine>--add-opens=java.base/java.nio=ALL-UNNAMED</argLine>
                     <!-- skip itcase e2ecase in mvn package
                     <includes>
                           <include>**/*.java</include>

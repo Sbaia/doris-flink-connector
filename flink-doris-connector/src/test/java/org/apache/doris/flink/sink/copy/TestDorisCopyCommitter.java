@@ -19,6 +19,7 @@ package org.apache.doris.flink.sink.copy;
 
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.exception.CopyLoadException;
+import org.apache.doris.flink.sink.DorisAbstractCommittable;
 import org.apache.doris.flink.sink.HttpEntityMock;
 import org.apache.doris.flink.sink.OptionUtils;
 import org.apache.doris.flink.sink.committer.MockCommitRequest;
@@ -71,7 +72,7 @@ public class TestDorisCopyCommitter {
         String response =
                 "{\"msg\":\"success\",\"code\":0,\"data\":{\"result\":{\"msg\":\"\",\"loadedRows\":\"2\",\"state\":\"FINISHED\",\"type\":\"\",\"filterRows\":\"0\",\"unselectRows\":\"0\",\"url\":null},\"time\":5230,\"type\":\"result_set\"},\"count\":0}";
         this.entityMock.setValue(response);
-        final MockCommitRequest<DorisCopyCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(copyCommittable);
         copyCommitter.commit(Collections.singletonList(request));
     }
@@ -81,7 +82,7 @@ public class TestDorisCopyCommitter {
         String response =
                 "{\"msg\":\"success\",\"code\":0,\"data\":{\"result\":{\"msg\":\"errCode = 2, detailMessage = No source file in this table(table).\",\"loadedRows\":\"\",\"state\":\"CANCELLED\",\"type\":\"ETL_RUN_FAIL\",\"filterRows\":\"\",\"unselectRows\":\"\",\"url\":null},\"time\":5255,\"type\":\"result_set\"},\"count\":0}";
         this.entityMock.setValue(response);
-        final MockCommitRequest<DorisCopyCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(copyCommittable);
         copyCommitter.commit(Collections.singletonList(request));
     }
@@ -90,7 +91,7 @@ public class TestDorisCopyCommitter {
     public void testCommitedError404() throws Exception {
         when(httpResponse.getStatusLine()).thenReturn(abnormalLine);
         when(httpResponse.getEntity()).thenReturn(null);
-        final MockCommitRequest<DorisCopyCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(copyCommittable);
         copyCommitter.commit(Collections.singletonList(request));
     }
@@ -99,7 +100,7 @@ public class TestDorisCopyCommitter {
     public void testCommitedErrorNullEntity() throws Exception {
         when(httpResponse.getStatusLine()).thenReturn(normalLine);
         when(httpResponse.getEntity()).thenReturn(null);
-        final MockCommitRequest<DorisCopyCommittable> request =
+        final MockCommitRequest<DorisAbstractCommittable> request =
                 new MockCommitRequest<>(copyCommittable);
         copyCommitter.commit(Collections.singletonList(request));
     }

@@ -20,8 +20,13 @@ package org.apache.doris.flink.sink;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.connector.sink2.Committer;
-import org.apache.flink.api.connector.sink2.StatefulSink;
-import org.apache.flink.api.connector.sink2.TwoPhaseCommittingSink;
+import org.apache.flink.api.connector.sink2.CommitterInitContext;
+import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.api.connector.sink2.StatefulSinkWriter;
+import org.apache.flink.api.connector.sink2.SupportsCommitter;
+import org.apache.flink.api.connector.sink2.SupportsWriterState;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.util.Preconditions;
 
@@ -54,8 +59,9 @@ import java.util.Collections;
  */
 @PublicEvolving
 public class DorisSink<IN>
-        implements StatefulSink<IN, DorisWriterState>,
-                TwoPhaseCommittingSink<IN, DorisAbstractCommittable> {
+        implements Sink<IN>,
+                SupportsWriterState<IN, DorisWriterState>,
+                SupportsCommitter<DorisAbstractCommittable> {
     private static final Logger LOG = LoggerFactory.getLogger(DorisSink.class);
     private final DorisOptions dorisOptions;
     private final DorisReadOptions dorisReadOptions;
@@ -84,12 +90,13 @@ public class DorisSink<IN>
     }
 
     @Override
-    public DorisAbstractWriter createWriter(InitContext initContext) throws IOException {
+    public SinkWriter<IN> createWriter(WriterInitContext initContext) throws IOException {
         return getDorisAbstractWriter(initContext, Collections.emptyList());
     }
 
     @Override
-    public Committer createCommitter() throws IOException {
+    public Committer<DorisAbstractCommittable> createCommitter(CommitterInitContext context)
+            throws IOException {
         if (WriteMode.STREAM_LOAD.equals(dorisExecutionOptions.getWriteMode())
                 || WriteMode.STREAM_LOAD_BATCH.equals(dorisExecutionOptions.getWriteMode())) {
             return new DorisCommitter(dorisOptions, dorisReadOptions, dorisExecutionOptions);
@@ -101,15 +108,15 @@ public class DorisSink<IN>
     }
 
     @Override
-    public DorisAbstractWriter restoreWriter(
-            InitContext initContext, Collection<DorisWriterState> recoveredState)
+    public StatefulSinkWriter<IN, DorisWriterState> restoreWriter(
+            WriterInitContext initContext, Collection<DorisWriterState> recoveredState)
             throws IOException {
         return getDorisAbstractWriter(initContext, recoveredState);
     }
 
     @VisibleForTesting
     public DorisAbstractWriter getDorisAbstractWriter(
-            InitContext initContext, Collection<DorisWriterState> states) {
+            WriterInitContext initContext, Collection<DorisWriterState> states) {
         if (WriteMode.STREAM_LOAD.equals(dorisExecutionOptions.getWriteMode())) {
             return new DorisWriter<>(
                     initContext,

@@ -18,9 +18,8 @@
 package org.apache.doris.flink.table;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.functions.AsyncTableFunction;
+import org.apache.flink.table.functions.AsyncLookupFunction;
 import org.apache.flink.table.functions.FunctionContext;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.util.Preconditions;
@@ -43,7 +42,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class DorisRowDataAsyncLookupFunction extends AsyncTableFunction<RowData> {
+public class DorisRowDataAsyncLookupFunction extends AsyncLookupFunction {
     private static final Logger LOG =
             LoggerFactory.getLogger(DorisRowDataAsyncLookupFunction.class);
     private final DorisOptions options;
@@ -96,10 +95,10 @@ public class DorisRowDataAsyncLookupFunction extends AsyncTableFunction<RowData>
         this.lookupMetrics = new LookupMetrics(context.getMetricGroup());
     }
 
-    /** This is a lookup method which is called by Flink framework in runtime. */
-    public void eval(CompletableFuture<Collection<RowData>> future, Object... keys)
-            throws IOException {
-        RowData keyRow = GenericRowData.of(keys);
+    @Override
+    public CompletableFuture<Collection<RowData>> asyncLookup(RowData keyRow) {
+        CompletableFuture<Collection<RowData>> future = new CompletableFuture<>();
+
         if (cache != null) {
             List<RowData> cachedRows = cache.getIfPresent(keyRow);
             if (cachedRows != null) {
@@ -108,13 +107,19 @@ public class DorisRowDataAsyncLookupFunction extends AsyncTableFunction<RowData>
                     LOG.debug("lookup cache hit for key: {}", keyRow);
                 }
                 future.complete(cachedRows);
-                return;
+                return future;
             } else {
                 lookupMetrics.incMissCount();
             }
         }
 
-        CompletableFuture<List<RowData>> resultFuture = lookupReader.asyncGet(keyRow);
+        CompletableFuture<List<RowData>> resultFuture;
+        try {
+            resultFuture = lookupReader.asyncGet(keyRow);
+        } catch (IOException e) {
+            future.completeExceptionally(e);
+            return future;
+        }
         resultFuture.handleAsync(
                 (resultRows, throwable) -> {
                     try {
@@ -140,6 +145,8 @@ public class DorisRowDataAsyncLookupFunction extends AsyncTableFunction<RowData>
                     }
                     return null;
                 });
+
+        return future;
     }
 
     @Override

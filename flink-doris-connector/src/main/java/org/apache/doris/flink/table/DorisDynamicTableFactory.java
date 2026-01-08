@@ -19,14 +19,14 @@ package org.apache.doris.flink.table;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.Column;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.factories.DynamicTableSinkFactory;
 import org.apache.flink.table.factories.DynamicTableSourceFactory;
 import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.types.DataType;
-import org.apache.flink.table.utils.TableSchemaUtils;
 
 import org.apache.doris.flink.cfg.DorisExecutionOptions;
 import org.apache.doris.flink.cfg.DorisLookupOptions;
@@ -181,16 +181,23 @@ public final class DorisDynamicTableFactory
         // get the validated options
         final ReadableConfig options = helper.getOptions();
         // derive the produced data type (excluding computed columns) from the catalog table
-        final DataType producedDataType =
-                context.getCatalogTable().getSchema().toPhysicalRowDataType();
-        TableSchema physicalSchema =
-                TableSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
+        ResolvedSchema resolvedSchema = context.getCatalogTable().getResolvedSchema();
+        // Extract physical column names and types
+        String[] fieldNames = resolvedSchema.getColumns().stream()
+                .filter(Column::isPhysical)
+                .map(Column::getName)
+                .toArray(String[]::new);
+        DataType[] fieldTypes = resolvedSchema.getColumns().stream()
+                .filter(Column::isPhysical)
+                .map(Column::getDataType)
+                .toArray(DataType[]::new);
         // create and return dynamic table source
         return new DorisDynamicTableSource(
                 getDorisOptions(helper.getOptions()),
                 getDorisReadOptions(helper.getOptions()),
                 getDorisLookupOptions(helper.getOptions()),
-                physicalSchema,
+                fieldNames,
+                fieldTypes,
                 context.getPhysicalRowDataType());
     }
 
@@ -293,14 +300,23 @@ public final class DorisDynamicTableFactory
 
         Properties streamLoadProp =
                 DorisConfigOptions.getStreamLoadProp(context.getCatalogTable().getOptions());
-        TableSchema physicalSchema =
-                TableSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
+        ResolvedSchema resolvedSchema = context.getCatalogTable().getResolvedSchema();
+        // Extract physical column names and types
+        String[] fieldNames = resolvedSchema.getColumns().stream()
+                .filter(Column::isPhysical)
+                .map(Column::getName)
+                .toArray(String[]::new);
+        DataType[] fieldTypes = resolvedSchema.getColumns().stream()
+                .filter(Column::isPhysical)
+                .map(Column::getDataType)
+                .toArray(DataType[]::new);
         // create and return dynamic table sink
         return new DorisDynamicTableSink(
                 getDorisOptions(helper.getOptions()),
                 getDorisReadOptions(helper.getOptions()),
                 getDorisExecutionOptions(helper.getOptions(), streamLoadProp),
-                physicalSchema,
+                fieldNames,
+                fieldTypes,
                 parallelism);
     }
 }

@@ -17,7 +17,8 @@
 
 package org.apache.doris.flink.sink.batch;
 
-import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 
 import org.apache.doris.flink.cfg.DorisExecutionOptions;
 import org.apache.doris.flink.cfg.DorisOptions;
@@ -35,6 +36,7 @@ import org.mockito.MockedStatic;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 public class TestDorisBatchWriter {
 
@@ -57,7 +59,10 @@ public class TestDorisBatchWriter {
                         .build();
         thrown.expect(IllegalStateException.class);
         thrown.expectMessage("tableIdentifier input error");
-        Sink.InitContext initContext = mock(Sink.InitContext.class);
+        WriterInitContext initContext = mock(WriterInitContext.class);
+        TaskInfo taskInfo = mock(TaskInfo.class);
+        when(initContext.getTaskInfo()).thenReturn(taskInfo);
+        when(taskInfo.getIndexOfThisSubtask()).thenReturn(0);
         DorisBatchWriter batchWriter = new DorisBatchWriter(initContext, null, options, null, null);
     }
 
@@ -70,7 +75,10 @@ public class TestDorisBatchWriter {
                         .build();
         DorisReadOptions readOptions = DorisReadOptions.builder().build();
         DorisExecutionOptions executionOptions = DorisExecutionOptions.builder().build();
-        Sink.InitContext context = mock(Sink.InitContext.class);
+        WriterInitContext context = mock(WriterInitContext.class);
+        TaskInfo taskInfo = mock(TaskInfo.class);
+        when(context.getTaskInfo()).thenReturn(taskInfo);
+        when(taskInfo.getIndexOfThisSubtask()).thenReturn(0);
         SimpleStringSerializer simpleStringSerializer = new SimpleStringSerializer();
         DorisBatchWriter batchWriter =
                 new DorisBatchWriter(
