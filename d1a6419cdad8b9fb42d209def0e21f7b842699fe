@@ -1,0 +1,93 @@
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchWriter.java
+  d64bec87bb44da09 20,66,87-88
+.github/workflows/run-itcase.yml
+  d64bec87bb44da09 39,43-45
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/copy/DorisCopyWriter.java
+  d64bec87bb44da09 21,68,91
+CLAUDE.md
+  d64bec87bb44da09 1-106
+flink-doris-connector/pom.xml
+  d64bec87bb44da09 71-72,505-506,516,579-580
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/copy/TestDorisCopyWriter.java
+  d64bec87bb44da09 20,22,72-75,115-118
+flink-doris-connector/src/test/java/org/apache/doris/flink/catalog/DorisCatalogITCase.java
+  d64bec87bb44da09 69-88,92-96,252-253,286-293,402-409
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/DorisSinkTest.java
+  d64bec87bb44da09 20-21,44,61-64
+flink-doris-connector/src/test/java/org/apache/doris/flink/table/DorisDynamicTableFactoryTest.java
+  d64bec87bb44da09 22,110-111,117-118,199-200,206-207,220-221,232-233,244-245,250-251
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/committer/TestDorisCommitter.java
+  d64bec87bb44da09 27,100,118,131,143,163
+flink-doris-connector/src/main/java/org/apache/doris/flink/table/DorisRowDataJdbcLookupFunction.java
+  d64bec87bb44da09 24,40,46,93-94,102,107,110-111,118-122
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/copy/TestDorisCopyCommitter.java
+  d64bec87bb44da09 22,75,85,94,103
+flink-doris-connector/src/main/java/org/apache/doris/flink/table/DorisDynamicTableFactory.java
+  d64bec87bb44da09 22-23,184-193,199-200,303-312,318-319
+flink-doris-connector/build.sh
+  d64bec87bb44da09 118-119,122,138
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/writer/TestDorisWriter.java
+  d64bec87bb44da09 20-21,67-68,133-134,137-138,190-191,194-195
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/writer/TestRecordBuffer.java
+  d64bec87bb44da09 21,29-33
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/writer/TestRowDataSerializer.java
+  d64bec87bb44da09 35,51-56
+env.sh
+  d64bec87bb44da09 74-75
+flink-doris-connector/src/test/java/org/apache/doris/flink/source/DorisSourceITCase.java
+  d64bec87bb44da09 23,610-613,698-701
+flink-doris-connector/src/test/java/org/apache/doris/flink/lookup/DorisLookupTableITCase.java
+  d64bec87bb44da09 34,213,220-221,262,308
+flink-doris-connector/src/main/java/org/apache/doris/flink/table/DorisRowDataAsyncLookupFunction.java
+  d64bec87bb44da09 22,45,98-101,110,116-122,148-149
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/batch/TestDorisBatchWriter.java
+  d64bec87bb44da09 20-21,39,62-65,78-81
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/DorisSinkITCase.java
+  d64bec87bb44da09 23,45,484,491-494,521-522,554,561-564,590-591
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/writer/DorisAbstractWriter.java
+  d64bec87bb44da09 20-21,25-26
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/writer/DorisWriter.java
+  d64bec87bb44da09 21,81,95
+flink-doris-connector/src/main/java/org/apache/doris/flink/table/DorisDynamicTableSource.java
+  d64bec87bb44da09 30-31,64-65,73-74,79-80,133,143,163-164,225-226,233,239-241
+flink-doris-connector/src/main/java/org/apache/doris/flink/table/DorisDynamicTableSink.java
+  d64bec87bb44da09 25,59-60,68-69,74-75,113-114,163,185-186,193-196
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/copy/DorisCopyCommitter.java
+  d64bec87bb44da09 26,46,69,71-72
+MIGRATION_README.md
+  d64bec87bb44da09 1-124
+flink-doris-connector/src/test/java/org/apache/doris/flink/sink/writer/TestDorisStreamLoad.java
+  d64bec87bb44da09 57-58
+flink-doris-connector/src/main/java/org/apache/doris/flink/catalog/DorisCatalog.java
+  d64bec87bb44da09 230-233,358-359,364,372,374,377,379-384,386-388
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/DorisSink.java
+  d64bec87bb44da09 23-29,62-64,93,98,111-112,119
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/committer/DorisCommitter.java
+  d64bec87bb44da09 32,54,97,99-100
+.github/workflows/build-connector.yml
+  d64bec87bb44da09 39,41,44-45
+flink-doris-connector/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchSink.java
+  d64bec87bb44da09 24,54
+.github/workflows/run-e2ecase.yml
+  d64bec87bb44da09 39,43-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.29",
+  "base_commit_sha": "d1a6419cdad8b9fb42d209def0e21f7b842699fe",
+  "prompts": {
+    "d64bec87bb44da09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5c67e6fd-606b-4f41-9555-1fe796e80596",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>",
+      "messages": [],
+      "total_additions": 599,
+      "total_deletions": 420,
+      "accepted_lines": 566,
+      "overriden_lines": 0
+    }
+  }
+}
