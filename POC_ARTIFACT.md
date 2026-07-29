@@ -22,8 +22,8 @@ The workflow, consumer fixture, and `poc-release` Maven profile are release-only
 
 ## Published evidence
 
-- Source commit: `af44184e4b7b2efb85c583b646d624f82088ef2d`
-- Immutable build tag: `observable-flush-26.0.0-poc.2-build.1`
-- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30467928849`
-- Connector JAR SHA-256: `b6c36f6caac1b9fda89df297f5159f9438909897cd0c179805a48a70d3bfb907`
+- Source commit: `60cd6635f07ed4bd3891e8d020af8009f935efe5`
+- Immutable build tag: `observable-flush-26.0.0-poc.4-build.1`
+- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30470828597`
+- Connector JAR SHA-256: `ad7c0ae850a375521dc6367c5617b616dcb552dfe8c6db177d102fd17a270fea`
 - Clean-cache resolution and Maven dependency convergence: passed
