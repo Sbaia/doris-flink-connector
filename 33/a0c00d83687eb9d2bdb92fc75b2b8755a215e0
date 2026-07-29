@@ -1,0 +1,24 @@
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/serializer/DorisWriteFailureListener.java
+  s_8e35ce17f6a1a5::t_d400e1281a1799 1-17,26-29
+UPSTREAM_CONTRIBUTION_PLAN.md
+  s_8e35ce17f6a1a5::t_f86482eb07bc58 52,66
+  s_8e35ce17f6a1a5::t_9869fe9a12bd4f 1-51,53-65,67-167
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializer.java
+  s_8e35ce17f6a1a5::t_d400e1281a1799 169-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "33a0c00d83687eb9d2bdb92fc75b2b8755a215e0",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
