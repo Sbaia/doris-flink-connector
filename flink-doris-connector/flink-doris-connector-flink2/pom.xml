@@ -164,10 +164,6 @@ under the License.
                             <pattern>org.apache.thrift</pattern>
                             <shadedPattern>org.apache.doris.shaded.org.apache.thrift</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>com.github.luben.zstd</pattern>
-                            <shadedPattern>org.apache.doris.shaded.com.github.luben.zstd</shadedPattern>
-                        </relocation>
                     </relocations>
                     <filters>
                         <filter>

@@ -30,12 +30,22 @@ import com.github.luben.zstd.Zstd;
  * ZSTD compression codec for Arrow IPC per-buffer compression.
  *
  * <p>Uses the Flink-shaded Arrow types for compatibility with {@link ArrowSerializer}. Delegates
- * actual ZSTD compression to {@code zstd-jni} (available on Flink's classpath).
+ * actual ZSTD compression to the {@code zstd-jni} runtime embedded in the connector artifact.
  *
  * <p>Extends {@link AbstractCompressionCodec} which handles the 8-byte uncompressed length prefix
  * and the fallback to uncompressed storage when compression doesn't help.
  */
 final class ZstdCompressionCodec extends AbstractCompressionCodec {
+
+    static void verifyNativeLibrary() {
+        try {
+            Zstd.defaultCompressionLevel();
+        } catch (LinkageError failure) {
+            throw new IllegalStateException(
+                    "Arrow ZSTD requires a loadable, non-relocated zstd-jni native library",
+                    failure);
+        }
+    }
 
     @Override
     protected ArrowBuf doCompress(BufferAllocator allocator, ArrowBuf uncompressedBuffer) {

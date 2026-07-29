@@ -97,6 +97,9 @@ public final class ArrowSerializer {
         this.inputType = inputType;
         this.outputType = outputType;
         this.enableZstdCompression = enableZstdCompression;
+        if (enableZstdCompression) {
+            ZstdCompressionCodec.verifyNativeLibrary();
+        }
     }
 
     public void open(InputStream bais, OutputStream baos) throws Exception {

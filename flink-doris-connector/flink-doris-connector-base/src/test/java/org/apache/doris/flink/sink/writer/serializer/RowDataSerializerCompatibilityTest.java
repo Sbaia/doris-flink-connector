@@ -132,7 +132,11 @@ public class RowDataSerializerCompatibilityTest {
         return RowDataSerializer.builder()
                 .setFieldNames(new String[] {"site_id", "entity_id", "total_count"})
                 .setFieldType(
-                        new DataType[] {DataTypes.STRING(), DataTypes.STRING(), DataTypes.INT()})
+                        new DataType[] {
+                            DataTypes.VARCHAR(64).notNull(),
+                            DataTypes.VARCHAR(64).notNull(),
+                            DataTypes.INT()
+                        })
                 .setType(LoadConstants.ARROW)
                 .build();
     }
