@@ -1,0 +1,24 @@
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializerCompatibilityTest.java
+  s_8e35ce17f6a1a5::t_5d32be1d68c2a3 112-113,115-124,127-134,136-137
+  s_8e35ce17f6a1a5::t_d5d8c9baf2b152 135
+  s_8e35ce17f6a1a5::t_576db8aa5b992f 125
+  s_8e35ce17f6a1a5::t_aeab5116ea9faf 109-111,114,126,138
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ArrowSerializer.java
+  s_8e35ce17f6a1a5::t_214d38c3f7c4a0 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a9b2d8b880f4239895578bcdd74de17d44a6f4fa",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
