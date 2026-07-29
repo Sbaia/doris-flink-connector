@@ -166,9 +166,9 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
     }
 
     // Batch is dropped on Arrow serialization failure rather than rethrown, so a
-    // poison-pill batch can never fail the job. The failure listener routes the
-    // drop to the DLQ (see DorisWriteFailureListener); this method's own fallback
-    // stays drop-and-recover regardless of what the listener does.
+    // poison-pill batch can never fail the job. The failure listener makes the
+    // drop observable; this method's own fallback stays drop-and-recover regardless
+    // of what the listener does.
     public DorisRecord arrowToDorisRecord() {
         if (arrowWriteCnt == 0) {
             return DorisRecord.empty;
