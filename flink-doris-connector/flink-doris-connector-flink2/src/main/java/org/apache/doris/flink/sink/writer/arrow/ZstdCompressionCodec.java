@@ -26,15 +26,7 @@ import org.apache.flink.api.python.shaded.org.apache.arrow.vector.compression.Co
 
 import com.github.luben.zstd.Zstd;
 
-/**
- * ZSTD compression codec for Arrow IPC per-buffer compression.
- *
- * <p>Uses the Flink-shaded Arrow types for compatibility with {@link ArrowSerializer}. Delegates
- * actual ZSTD compression to the {@code zstd-jni} runtime embedded in the connector artifact.
- *
- * <p>Extends {@link AbstractCompressionCodec} which handles the 8-byte uncompressed length prefix
- * and the fallback to uncompressed storage when compression doesn't help.
- */
+/** ZSTD codec for the Arrow IPC implementation bundled with Flink 2. */
 final class ZstdCompressionCodec extends AbstractCompressionCodec {
 
     static void verifyNativeLibrary() {
@@ -52,11 +44,8 @@ final class ZstdCompressionCodec extends AbstractCompressionCodec {
         long uncompressedLength = uncompressedBuffer.writerIndex();
         byte[] uncompressedBytes = new byte[(int) uncompressedLength];
         uncompressedBuffer.getBytes(0, uncompressedBytes);
-
         byte[] compressedBytes = Zstd.compress(uncompressedBytes);
 
-        // AbstractCompressionCodec handles the 8-byte prefix and fallback logic.
-        // doCompress must return a buffer with: [8-byte prefix space][compressed data]
         long outputSize = 8L + compressedBytes.length;
         ArrowBuf compressedBuffer = allocator.buffer(outputSize);
         compressedBuffer.setBytes(8, compressedBytes);
@@ -70,7 +59,6 @@ final class ZstdCompressionCodec extends AbstractCompressionCodec {
         int compressedLength = (int) (compressedBuffer.writerIndex() - 8);
         byte[] compressedBytes = new byte[compressedLength];
         compressedBuffer.getBytes(8, compressedBytes);
-
         byte[] decompressedBytes = Zstd.decompress(compressedBytes, (int) uncompressedLength);
 
         ArrowBuf decompressedBuffer = allocator.buffer(decompressedBytes.length);
@@ -84,7 +72,7 @@ final class ZstdCompressionCodec extends AbstractCompressionCodec {
         return CompressionUtil.CodecType.ZSTD;
     }
 
-    /** Factory for creating {@link ZstdCompressionCodec} instances. */
+    /** Factory for creating ZSTD codecs. */
     static class Factory implements CompressionCodec.Factory {
         @Override
         public CompressionCodec createCodec(CompressionUtil.CodecType codecType) {
@@ -97,7 +85,6 @@ final class ZstdCompressionCodec extends AbstractCompressionCodec {
         @Override
         public CompressionCodec createCodec(
                 CompressionUtil.CodecType codecType, int compressionLevel) {
-            // ZSTD compression level is ignored - uses zstd-jni default level
             return createCodec(codecType);
         }
     }

@@ -1,0 +1,1 @@
+org.apache.doris.flink.sink.writer.arrow.Flink2ZstdArrowStreamWriterProvider

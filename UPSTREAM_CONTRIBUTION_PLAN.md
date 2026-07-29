@@ -108,7 +108,15 @@ It restores the Arrow serializer on the Flink 2 artifact, makes dropped batches 
 observable, closes allocator-backed writers, prevents HTTP gzip properties leaking into Arrow
 transport, and preserves the original `zstd-jni` package required by native symbol lookup.
 
-- Source provenance: `453df68a`, `a9b2d8b`, and only the generic source/POM hunks of `9eadc506`.
+The connector base is shared by the Flink 1 and Flink 2 artifacts, but the compressed Arrow IPC API
+exists only in the Arrow version shaded by Flink 2. Keep a Java 8-compatible provider contract in
+the base module and register the ZSTD implementation through `ServiceLoader` from the Flink 2
+module. Uncompressed Arrow remains available in both profiles. Enabling compression from an
+artifact without a matching profile provider fails during serializer initialization with an
+actionable error instead of failing later with a linkage error.
+
+- Source provenance: `453df68a`, `a9b2d8b`, only the generic source/POM hunks of `9eadc506`, and
+  the profile-provider compatibility patch developed after CI exposed the shared-base boundary.
 - Focused tests: `RowDataSerializerCompatibilityTest`, including CSV, JSON, Arrow, Arrow+ZSTD,
   failure recovery, listener isolation and allocator release.
 - Packaging test: run a clean external consumer against the packaged Flink 2 JAR and execute a real
@@ -149,7 +157,10 @@ Before opening each pull request:
    ```
 
 4. Run the focused tests listed for the patch, Maven dependency convergence, formatting/license
-   checks exposed by the current upstream build, and the existing Flink 1 compatibility suite.
+   checks exposed by the current upstream build, and the existing Flink 1/JDK 8 compatibility
+   suite. The connector base is shared: generic sources must remain valid Java 8 even when a patch
+   is developed through the Flink 2/JDK 21 profile. Use `clean` when switching profiles because the
+   profiles reuse Maven target directories and stale classes can mask compatibility failures.
 5. For patches 2-4, run the live Doris matrix for immediate success, `Publish Timeout`, rejection,
    remote failure and consecutive epochs. For patch 5, run every supported format from a packaged
    clean-cache consumer with Arrow allocator debugging enabled.

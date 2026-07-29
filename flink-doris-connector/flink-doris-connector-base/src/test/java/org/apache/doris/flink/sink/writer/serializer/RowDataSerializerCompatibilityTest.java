@@ -80,14 +80,13 @@ public class RowDataSerializerCompatibilityTest {
     }
 
     @Test
-    public void arrowCompressionAndDropAccountingRemainAvailable() throws Exception {
+    public void arrowDropAccountingRemainsAvailableWithoutCompression() throws Exception {
         AtomicInteger failedRows = new AtomicInteger();
         RowDataSerializer serializer =
                 RowDataSerializer.builder()
                         .setFieldNames(new String[] {"value"})
                         .setFieldType(new DataType[] {DataTypes.STRING()})
                         .setType(LoadConstants.ARROW)
-                        .enableArrowCompression(true)
                         .setFailureListener((rowCount, failure) -> failedRows.addAndGet(rowCount))
                         .build();
         serializer.initial();
@@ -105,6 +104,29 @@ public class RowDataSerializerCompatibilityTest {
         Assert.assertNotSame(DorisRecord.empty, record);
         Assert.assertTrue(new String(record.getRow(), StandardCharsets.ISO_8859_1).length() > 0);
         serializer.close();
+    }
+
+    @Test
+    public void arrowCompressionFailsFastWithoutProfileProvider() throws Exception {
+        RowDataSerializer serializer =
+                RowDataSerializer.builder()
+                        .setFieldNames(new String[] {"value"})
+                        .setFieldType(new DataType[] {DataTypes.STRING()})
+                        .setType(LoadConstants.ARROW)
+                        .enableArrowCompression(true)
+                        .build();
+        boolean initialized = false;
+        try {
+            serializer.initial();
+            initialized = true;
+            Assert.fail("Expected Arrow compression to require a profile provider");
+        } catch (IllegalStateException expected) {
+            Assert.assertTrue(expected.getMessage().contains("Flink profile"));
+        } finally {
+            if (initialized) {
+                serializer.close();
+            }
+        }
     }
 
     @Test

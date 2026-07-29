@@ -245,8 +245,8 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         if (field == null) {
             return null;
         }
-        if (field instanceof byte[] bytes) {
-            return Base64.getEncoder().encodeToString(bytes);
+        if (field instanceof byte[]) {
+            return Base64.getEncoder().encodeToString((byte[]) field);
         }
         return field.toString();
     }

@@ -21,10 +21,8 @@ package org.apache.doris.flink.sink.writer.arrow;
 import org.apache.flink.api.python.shaded.org.apache.arrow.memory.BufferAllocator;
 import org.apache.flink.api.python.shaded.org.apache.arrow.memory.RootAllocator;
 import org.apache.flink.api.python.shaded.org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.flink.api.python.shaded.org.apache.arrow.vector.compression.CompressionUtil;
 import org.apache.flink.api.python.shaded.org.apache.arrow.vector.ipc.ArrowStreamReader;
 import org.apache.flink.api.python.shaded.org.apache.arrow.vector.ipc.ArrowStreamWriter;
-import org.apache.flink.api.python.shaded.org.apache.arrow.vector.ipc.message.IpcOption;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.runtime.arrow.ArrowReader;
 import org.apache.flink.table.runtime.arrow.ArrowUtils;
@@ -57,6 +55,9 @@ public final class ArrowSerializer {
 
     /** Whether to use ZSTD per-buffer compression in the Arrow IPC stream. */
     private final boolean enableZstdCompression;
+
+    /** Flink-profile-specific writer provider, resolved only when compression is enabled. */
+    private final ZstdArrowStreamWriterProvider compressionProvider;
 
     /** Allocator which is used for byte buffer allocation. */
     private transient BufferAllocator allocator;
@@ -97,9 +98,8 @@ public final class ArrowSerializer {
         this.inputType = inputType;
         this.outputType = outputType;
         this.enableZstdCompression = enableZstdCompression;
-        if (enableZstdCompression) {
-            ZstdCompressionCodec.verifyNativeLibrary();
-        }
+        this.compressionProvider =
+                enableZstdCompression ? ZstdArrowStreamWriterProvider.load() : null;
     }
 
     public void open(InputStream bais, OutputStream baos) throws Exception {
@@ -180,13 +180,7 @@ public final class ArrowSerializer {
             if (channel == null) {
                 channel = Channels.newChannel(baos);
             }
-            return new ArrowStreamWriter(
-                    rootWriter,
-                    null,
-                    channel,
-                    IpcOption.DEFAULT,
-                    new ZstdCompressionCodec.Factory(),
-                    CompressionUtil.CodecType.ZSTD);
+            return compressionProvider.create(rootWriter, channel);
         }
         return new ArrowStreamWriter(rootWriter, null, baos);
     }

@@ -45,7 +45,7 @@ jobs:
       run: |
         cd flink-doris-connector && mvn test \
         -Pflink2 -pl flink-doris-connector-it -am \
-        -DfailIfNoTests=false \
+        -Dsurefire.failIfNoSpecifiedTests=false \
         -Dtest="*ITCase" \
         -Dflink.version=2.2.0 \
         -Dflink.major.version=2.2 \
@@ -91,7 +91,7 @@ jobs:
       run: |
         cd flink-doris-connector && mvn test \
         -Pflink2 -pl flink-doris-connector-it -am \
-        -DfailIfNoTests=false \
+        -Dsurefire.failIfNoSpecifiedTests=false \
         -Dtest="DorisSourceITCase,DorisSinkITCase,DorisSinkFailoverITCase" \
         -Dflink.version=${{ matrix.flink-version }} \
         -Dflink.major.version=${{ matrix.flink-major }} \
