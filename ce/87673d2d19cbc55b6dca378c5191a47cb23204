@@ -1,0 +1,20 @@
+.github/workflows/publish-poc-package.yml
+  s_8e35ce17f6a1a5::t_a8e23be0b936c8 26
+  s_8e35ce17f6a1a5::t_254a30566bc3a2 7,14,20,48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ce87673d2d19cbc55b6dca378c5191a47cb23204",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
