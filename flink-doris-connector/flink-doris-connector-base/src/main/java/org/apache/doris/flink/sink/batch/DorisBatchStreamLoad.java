@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -114,6 +115,9 @@ public class DorisBatchStreamLoad implements Serializable {
     private final Lock lock = new ReentrantLock();
     private final Condition block = lock.newCondition();
     private final Map<String, ReadWriteLock> bufferMapLock = new ConcurrentHashMap<>();
+    private final AtomicLong nextLoadSequence = new AtomicLong(0L);
+    private final BatchFlushResultTracker flushResultTracker = new BatchFlushResultTracker();
+    private long lastDrainedSequence;
 
     public DorisBatchStreamLoad(
             DorisOptions dorisOptions,
@@ -187,20 +191,24 @@ public class DorisBatchStreamLoad implements Serializable {
         checkFlushException();
         String bufferKey = getTableIdentifier(database, table);
 
-        getLock(bufferKey).readLock().lock();
-        BatchRecordBuffer buffer =
-                bufferMap.computeIfAbsent(
-                        bufferKey,
-                        k ->
-                                new BatchRecordBuffer(
-                                        database,
-                                        table,
-                                        this.lineDelimiter,
-                                        executionOptions.getBufferFlushIntervalMs()));
-
-        int bytes = buffer.insert(record);
-        currentCacheBytes.addAndGet(bytes);
-        getLock(bufferKey).readLock().unlock();
+        BatchRecordBuffer buffer;
+        int bytes;
+        getLock(bufferKey).writeLock().lock();
+        try {
+            buffer =
+                    bufferMap.computeIfAbsent(
+                            bufferKey,
+                            k ->
+                                    new BatchRecordBuffer(
+                                            database,
+                                            table,
+                                            this.lineDelimiter,
+                                            executionOptions.getBufferFlushIntervalMs()));
+            bytes = buffer.insert(record);
+            currentCacheBytes.addAndGet(bytes);
+        } finally {
+            getLock(bufferKey).writeLock().unlock();
+        }
 
         if (flushQueue.size() < executionOptions.getFlushQueueSize()
                 && (buffer.getBufferSizeBytes() >= executionOptions.getBufferFlushMaxBytes()
@@ -243,7 +251,27 @@ public class DorisBatchStreamLoad implements Serializable {
     }
 
     public boolean checkpointFlush() {
-        return doFlush(null, true, false);
+        try {
+            flushAndWait();
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new DorisBatchLoadException(e);
+        }
+    }
+
+    /** Flushes all current buffers and returns the next non-overlapping completed load epoch. */
+    public synchronized BatchFlushResult flushAndWait() throws InterruptedException {
+        checkFlushException();
+        flush(null, true);
+        long throughSequence = nextLoadSequence.get();
+        if (throughSequence == lastDrainedSequence) {
+            return BatchFlushResult.empty(lastDrainedSequence);
+        }
+        BatchFlushResult result =
+                flushResultTracker.awaitAndDrain(lastDrainedSequence, throughSequence);
+        lastDrainedSequence = throughSequence;
+        return result;
     }
 
     private synchronized boolean doFlush(
@@ -283,9 +311,6 @@ public class DorisBatchStreamLoad implements Serializable {
         } else {
             LOG.warn("buffer not found for key: {}, may be already flushed.", bufferKey);
         }
-        if (waitUtilDone) {
-            waitAsyncLoadFinish();
-        }
         return true;
     }
 
@@ -302,19 +327,25 @@ public class DorisBatchStreamLoad implements Serializable {
             return;
         }
         buffer.setLabelName(labelGenerator.generateBatchLabel(buffer.getTable()));
+        buffer.setSequence(nextLoadSequence.incrementAndGet());
         LOG.debug("flush buffer for key {} with label {}", bufferKey, buffer.getLabelName());
         putRecordToFlushQueue(buffer);
     }
 
     private void putRecordToFlushQueue(BatchRecordBuffer buffer) {
         checkFlushException();
-        if (!loadThreadAlive) {
+        if (!started.get()) {
             throw new RuntimeException("load thread already exit, write was interrupted");
         }
         try {
             flushQueue.put(buffer);
         } catch (InterruptedException e) {
-            throw new RuntimeException("Failed to put record buffer to flush queue");
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to put record buffer to flush queue", e);
+        }
+        if (!started.get()) {
+            // close() may have freed queue capacity while this producer was blocked.
+            flushQueue.remove(buffer);
         }
         // When the load thread reports an error, the flushQueue will be cleared,
         // and need to force a check for the exception.
@@ -327,23 +358,32 @@ public class DorisBatchStreamLoad implements Serializable {
         }
     }
 
-    private void waitAsyncLoadFinish() {
-        // Because the queue will have a drainTo operation, it needs to be multiplied by 2
-        for (int i = 0; i < executionOptions.getFlushQueueSize() * 2 + 1; i++) {
-            // eof buffer
-            BatchRecordBuffer empty = new BatchRecordBuffer();
-            putRecordToFlushQueue(empty);
-        }
-    }
-
     private String getTableIdentifier(String database, String table) {
         return database + "." + table;
     }
 
     public void close() {
-        // close async executor
-        this.loadExecutorService.shutdown();
-        this.started.set(false);
+        if (!this.started.getAndSet(false)) {
+            return;
+        }
+        DorisBatchLoadException closed = new DorisBatchLoadException("Stream Load is closed");
+        this.exception.compareAndSet(null, closed);
+        this.flushResultTracker.fail(closed);
+        this.flushQueue.clear();
+        this.loadExecutorService.shutdownNow();
+        lock.lock();
+        try {
+            block.signalAll();
+        } finally {
+            lock.unlock();
+        }
+        try {
+            if (!this.loadExecutorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                LOG.warn("Timed out waiting for Stream Load worker to terminate");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @VisibleForTesting
@@ -390,6 +430,7 @@ public class DorisBatchStreamLoad implements Serializable {
         mergeBuffer.setNumOfRecords(mergeBuffer.getNumOfRecords() + buffer.getNumOfRecords());
         mergeBuffer.setBufferSizeBytes(
                 mergeBuffer.getBufferSizeBytes() + buffer.getBufferSizeBytes());
+        mergeBuffer.includeSequenceRange(buffer);
         return true;
     }
 
@@ -427,7 +468,8 @@ public class DorisBatchStreamLoad implements Serializable {
                     if (!flushQueue.isEmpty()) {
                         flushQueue.drainTo(recordList, flushQueueSize - 1);
                         if (mergeBuffer(recordList, buffer)) {
-                            load(buffer.getLabelName(), buffer);
+                            RespContent response = load(buffer.getLabelName(), buffer);
+                            flushResultTracker.complete(toLoadResult(buffer, response));
                             merge = true;
                         }
                     }
@@ -438,12 +480,26 @@ public class DorisBatchStreamLoad implements Serializable {
                                 // When the label is empty, it's eof buffer for checkpointFlush.
                                 continue;
                             }
-                            load(bf.getLabelName(), bf);
+                            RespContent response = load(bf.getLabelName(), bf);
+                            flushResultTracker.complete(toLoadResult(bf, response));
                         }
                     }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    if (started.get()) {
+                        LOG.error("worker was interrupted unexpectedly", e);
+                        exception.set(e);
+                        flushResultTracker.fail(e);
+                    }
+                    break;
                 } catch (Exception e) {
+                    if (!started.get()) {
+                        LOG.debug("Stream Load worker stopped during shutdown", e);
+                        break;
+                    }
                     LOG.error("worker running error", e);
                     exception.set(e);
+                    flushResultTracker.fail(e);
                     // clear queue to avoid writer thread blocking
                     flushQueue.clear();
                     break;
@@ -454,7 +510,7 @@ public class DorisBatchStreamLoad implements Serializable {
         }
 
         /** execute stream load. */
-        public void load(String label, BatchRecordBuffer buffer) throws IOException {
+        public RespContent load(String label, BatchRecordBuffer buffer) throws IOException {
             if (enableGroupCommit) {
                 label = null;
             }
@@ -508,7 +564,7 @@ public class DorisBatchStreamLoad implements Serializable {
                                 } finally {
                                     lock.unlock();
                                 }
-                                return;
+                                return respContent;
                             } else {
                                 String errMsg = null;
                                 if (StringUtils.isBlank(respContent.getMessage())
@@ -537,6 +593,10 @@ public class DorisBatchStreamLoad implements Serializable {
                             resEx = new DorisRuntimeException("stream load failed with: " + reason);
                         }
                     } catch (Exception ex) {
+                        if (!started.get()) {
+                            throw new DorisBatchLoadException(
+                                    "Stream Load was closed while loading", ex);
+                        }
                         resEx = ex;
                         LOG.error("stream load error with {}, to retry, cause by", hostPort, ex);
                     }
@@ -563,11 +623,117 @@ public class DorisBatchStreamLoad implements Serializable {
                 throw new DorisBatchLoadException(
                         "stream load error: " + resEx.getMessage(), resEx);
             }
+            throw new DorisBatchLoadException("stream load ended without a result");
         }
 
         private void refreshLoadUrl(String database, String table) {
             hostPort = backendUtil.getAvailableBackend(subTaskId);
             loadUrl = String.format(LOAD_URL_PATTERN, hostPort, database, table);
+        }
+    }
+
+    private BatchLoadResult toLoadResult(BatchRecordBuffer buffer, RespContent response) {
+        return BatchLoadResult.completed(
+                buffer.getFirstSequence(),
+                buffer.getLastSequence(),
+                buffer.getDatabase(),
+                buffer.getTable(),
+                buffer.getNumOfRecords(),
+                buffer.getBufferSizeBytes(),
+                response);
+    }
+
+    @VisibleForTesting
+    public int getTrackedCompletionCount() {
+        return flushResultTracker.size();
+    }
+
+    @VisibleForTesting
+    public int getPendingFlushCount() {
+        return flushQueue.size();
+    }
+
+    private static final class BatchFlushResultTracker {
+        private final Lock trackerLock = new ReentrantLock();
+        private final Condition completed = trackerLock.newCondition();
+        private final List<BatchLoadResult> retainedResults = new ArrayList<>();
+        private long completedThrough;
+        private Throwable failure;
+
+        void complete(BatchLoadResult result) {
+            trackerLock.lock();
+            try {
+                if (failure != null) {
+                    return;
+                }
+                if (result.getFirstSequence() != completedThrough + 1) {
+                    failLocked(
+                            new IllegalStateException(
+                                    "Out-of-order Stream Load completion: expected sequence "
+                                            + (completedThrough + 1)
+                                            + " but received "
+                                            + result.getFirstSequence()));
+                    return;
+                }
+                retainedResults.add(result);
+                completedThrough = result.getLastSequence();
+                completed.signalAll();
+            } finally {
+                trackerLock.unlock();
+            }
+        }
+
+        BatchFlushResult awaitAndDrain(long fromExclusive, long throughInclusive)
+                throws InterruptedException {
+            trackerLock.lockInterruptibly();
+            try {
+                while (completedThrough < throughInclusive && failure == null) {
+                    completed.await();
+                }
+                if (failure != null) {
+                    throw new DorisBatchLoadException(failure);
+                }
+                List<BatchLoadResult> epoch = new ArrayList<>();
+                Iterator<BatchLoadResult> iterator = retainedResults.iterator();
+                while (iterator.hasNext()) {
+                    BatchLoadResult result = iterator.next();
+                    if (result.getLastSequence() <= throughInclusive) {
+                        if (result.getFirstSequence() > fromExclusive) {
+                            epoch.add(result);
+                        }
+                        iterator.remove();
+                    }
+                }
+                return BatchFlushResult.completed(fromExclusive, throughInclusive, epoch);
+            } finally {
+                trackerLock.unlock();
+            }
+        }
+
+        void fail(Throwable throwable) {
+            trackerLock.lock();
+            try {
+                failLocked(throwable);
+            } finally {
+                trackerLock.unlock();
+            }
+        }
+
+        private void failLocked(Throwable throwable) {
+            if (failure == null) {
+                failure = throwable;
+            }
+            retainedResults.clear();
+            completed.signalAll();
+        }
+
+        int size() {
+            trackerLock.lock();
+            try {
+                return retainedResults.size();
+            } finally {
+                trackerLock.unlock();
+            }
         }
     }
 

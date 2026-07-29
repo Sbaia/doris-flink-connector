@@ -129,10 +129,17 @@ public class DorisBatchWriter<IN> {
     }
 
     public void flush(boolean flush) throws IOException, InterruptedException {
+        flushAndWait();
+    }
+
+    /**
+     * Flushes serializer and Stream Load buffers, returning the completed non-overlapping epoch.
+     */
+    public BatchFlushResult flushAndWait() throws IOException, InterruptedException {
         checkFlushException();
         writeOneDorisRecord(serializer.flush());
         LOG.info("checkpoint flush triggered.");
-        batchStreamLoad.checkpointFlush();
+        return batchStreamLoad.flushAndWait();
     }
 
     public Collection<DorisCommittable> prepareCommit() throws IOException, InterruptedException {
