@@ -1,0 +1,27 @@
+.github/workflows/run-itcase-flink1.yml
+  s_8e35ce17f6a1a5::t_40cdb065c3becd 36,38
+.github/workflows/run-e2ecase-flink1.yml
+  s_8e35ce17f6a1a5::t_40cdb065c3becd 36,38
+.github/workflows/checkstyle.yaml
+  s_8e35ce17f6a1a5::t_40cdb065c3becd 36,38,46,48,53
+.github/workflows/build-connector.yml
+  s_8e35ce17f6a1a5::t_40cdb065c3becd 39,41,94,96
+.github/workflows/run-itcase-flink2.yml
+  s_8e35ce17f6a1a5::t_40cdb065c3becd 39,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "1837d01e73c1deb2d01719cfcb1b2f765a2970e7",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
