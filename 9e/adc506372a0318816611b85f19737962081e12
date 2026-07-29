@@ -1,0 +1,40 @@
+.github/poc-consumer/pom.xml
+  s_8e35ce17f6a1a5::t_d5f7c792916fd3 12,15
+  s_8e35ce17f6a1a5::t_cc0104d03b2e2c 13-14
+  s_8e35ce17f6a1a5::t_38b584aba09020 11,35-51
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializerCompatibilityTest.java
+  s_8e35ce17f6a1a5::t_3575b8f429a2c7 135-139
+.github/poc-consumer/src/main/java/org/apache/doris/poc/verification/PackagedZstdProbe.java
+  s_8e35ce17f6a1a5::t_2936a56d1c3b35 3-16
+  s_8e35ce17f6a1a5::t_38b584aba09020 18-40
+  s_8e35ce17f6a1a5::t_33f003ac2b7c9a 1-2,17
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ArrowSerializer.java
+  s_8e35ce17f6a1a5::t_04b99cde9ddb41 100-102
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ZstdCompressionCodec.java
+  s_8e35ce17f6a1a5::t_04b99cde9ddb41 33,40-48
+  s_9dc0b5165e0373::t_6632a651c860a0 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "9eadc506372a0318816611b85f19737962081e12",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    },
+    "s_9dc0b5165e0373": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fadc9-e253-7ac3-a91f-f8d02b3b5215",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
