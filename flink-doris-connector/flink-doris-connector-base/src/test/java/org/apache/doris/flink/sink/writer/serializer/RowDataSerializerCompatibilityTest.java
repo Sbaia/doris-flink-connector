@@ -24,6 +24,7 @@ import org.apache.flink.table.types.DataType;
 
 import org.apache.doris.flink.sink.writer.LoadConstants;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Compatibility tests for pipeline-used serializer capabilities. */
 public class RowDataSerializerCompatibilityTest {
+
+    @Before
+    public void clearInterruptLeakedByLegacyCancellationTests() {
+        // This compatibility check opens an interruptible Arrow channel. Several legacy connector
+        // tests exercise cancellation in the same Surefire JVM and can leave its runner thread
+        // interrupted; that state belongs to the previous test and must not contaminate this one.
+        Thread.interrupted();
+    }
+
+    @Test
+    public void compatibilityFixtureClearsLeakedInterruptState() {
+        Thread.currentThread().interrupt();
+
+        clearInterruptLeakedByLegacyCancellationTests();
+
+        Assert.assertFalse(Thread.currentThread().isInterrupted());
+    }
 
     @Test
     public void binaryFieldsUseStableBase64InCsvAndJson() throws Exception {
