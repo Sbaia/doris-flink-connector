@@ -19,7 +19,7 @@ under the License.
 
 # Observable synchronous flush POC artifact
 
-This fork publishes `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.4` to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing.
+This fork publishes `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.10` to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing.
 
 The version is pinned to this provenance chain:
 
@@ -28,10 +28,14 @@ The version is pinned to this provenance chain:
 - Observable flush and visibility patches through: `e04ea44015a61e88baabc7b90645ae900cdb67ca`
 - Arrow/ZSTD and deterministic serialization-drop compatibility: `453df68a4eb86ac634aecd712f2922335463937d`
 - Arrow compatibility test isolation: `0999292cc6568d456f6cca51fcf17ea52b9d69e4`
+- Exact logical-row, submitted-byte and buffered-byte accounting: `4c5c02e0`, `580bbe81`, `66665614`
+- Arrow lifecycle safety and native ZSTD linkage: `a9b2d8b8`, `9eadc506`
+- Flink 1/Java 8 and Flink 2 profile isolation: `f17d0fe7`, `0cf42f9e`
+- Immutable publication source: `3633810b0c9455de6b15c296fb78394040c20a39`
 
-The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.4-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
+The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.10-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
 
-`26.0.0-poc.1` is withdrawn and must not be consumed: its package upload succeeded, but its published child POM retained a literal `${revision}` parent version and therefore could not be resolved outside the source reactor. `26.0.0-poc.3` is also withdrawn: its release test inherited an interrupt flag from a legacy cancellation test, so only the parent POM was uploaded and no consumer connector artifact exists. Both versions are left untouched as immutable failure evidence. `26.0.0-poc.2` is the first consumable observable-flush build; `26.0.0-poc.4` adds the generic Arrow/ZSTD and deterministic drop APIs required by the pipeline with an isolated compatibility fixture.
+`26.0.0-poc.1` is withdrawn and must not be consumed: its package upload succeeded, but its published child POM retained a literal `${revision}` parent version and therefore could not be resolved outside the source reactor. `26.0.0-poc.3` is also withdrawn: its release test inherited an interrupt flag from a legacy cancellation test, so only the parent POM was uploaded and no consumer connector artifact exists. Both versions are left untouched as immutable failure evidence. `26.0.0-poc.2` is the first consumable observable-flush build; later builds add serializer compatibility, exact accounting and allocator safety. `26.0.0-poc.10` is the first build that also preserves the shared Flink 1/Java 8 base while providing Arrow/ZSTD through the Flink 2 profile.
 
 Consumers authenticate Maven server `github` using environment-backed credentials. For example, CI may map `GITHUB_ACTOR` and a read-only package token through Maven `settings.xml`; credentials must never be written to a project POM or committed settings file.
 
@@ -41,8 +45,8 @@ The workflow, consumer fixture, and `poc-release` Maven profile are release-only
 
 ## Published evidence
 
-- Source commit: `ce87673d2d19cbc55b6dca378c5191a47cb23204`
-- Immutable build tag: `observable-flush-26.0.0-poc.5-build.1`
-- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30473240738`
-- Connector JAR SHA-256: `22566698b87ea505c1ec90cf71c48dd4d085e380bc1ebe8da51d6a1e7d1513e0`
+- Source commit: `3633810b0c9455de6b15c296fb78394040c20a39`
+- Immutable build tag: `observable-flush-26.0.0-poc.10-build.1`
+- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30484489287`
+- Connector JAR SHA-256: `c0cba961bc291bcd733ef18ebdbd2d062c288fdcf19a95f598ac4fc766819632`
 - Clean-cache resolution and Maven dependency convergence: passed

@@ -26,10 +26,10 @@ stack. The downstream branch is an integration and artifact-publication branch; 
 opened as one monolithic upstream pull request.
 
 - Upstream baseline: `apache/doris-flink-connector@825b7bbe9647d54398eed91870219f322c617967`
-- Downstream proof head: `Sbaia/doris-flink-connector@17c86dd4b2ab0b4a3091a0850d8c9123f2fa38c9`
+- Downstream proof head: `Sbaia/doris-flink-connector@3633810b0c9455de6b15c296fb78394040c20a39`
 - Existing Flink 2/JDK 21 prerequisite: `c73add2959560899f92c2e3906d20cbc5d3282ae`
-- Proven personal artifact: `26.0.0-poc.9`, development-only
-- Artifact SHA-256: `69351a40182af43bac735981ccde332a1ef5b3aad2bbe82740b71e26be531cc2`
+- Proven personal artifact: `26.0.0-poc.10`, development-only
+- Artifact SHA-256: `c0cba961bc291bcd733ef18ebdbd2d062c288fdcf19a95f598ac4fc766819632`
 
 Retarget each contribution onto the current upstream head immediately before submission. Keep the
 JDK 21 prerequisite separate: if it has not landed, base the stack on that open contribution rather
@@ -116,7 +116,7 @@ artifact without a matching profile provider fails during serializer initializat
 actionable error instead of failing later with a linkage error.
 
 - Source provenance: `453df68a`, `a9b2d8b`, only the generic source/POM hunks of `9eadc506`, and
-  the profile-provider compatibility patch developed after CI exposed the shared-base boundary.
+  the generic source/POM/test hunks of `f17d0fe` developed after CI exposed the shared-base boundary.
 - Focused tests: `RowDataSerializerCompatibilityTest`, including CSV, JSON, Arrow, Arrow+ZSTD,
   failure recovery, listener isolation and allocator release.
 - Packaging test: run a clean external consumer against the packaged Flink 2 JAR and execute a real
@@ -132,7 +132,7 @@ Apache contribution:
   immutable POC tags, GitHub Packages permissions and clean-cache publication evidence;
 - commits `01abd5f1`, `84088356`, `53fd013a`, `af44184e`, `109ba989`, `4be4ccf4`, `60cd6635`,
   `1ded2af0`, `ce87673d`, `ea165bf3`, `06744a64`, `e32bdee5`, `53c28c77`, `b4a9718a`, and
-  `17c86dd4`;
+  `17c86dd4`, and `3633810b`;
 - `.github/poc-consumer` changes in `9eadc506`; stage its generic ZSTD source/POM changes separately;
 - pipeline ACK, manifest, routing, dead-letter, barrier, canary and rollback behavior. Those concepts
   belong to the downstream application, not to the connector API.
