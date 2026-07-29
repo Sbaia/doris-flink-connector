@@ -1,0 +1,55 @@
+.github/poc-consumer/pom.xml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 2-19
+flink-doris-connector/flink-doris-connector-flink2/src/main/java/org/apache/doris/flink/sink/writer/arrow/Flink2ZstdArrowStreamWriterProvider.java
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 1-45
+flink-doris-connector/flink-doris-connector-flink2/src/main/java/org/apache/doris/flink/sink/writer/arrow/ZstdCompressionCodec.java
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 29,75
+.github/workflows/run-e2ecase-flink2.yml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 54
+flink-doris-connector/flink-doris-connector-flink2/src/main/resources/META-INF/services/org.apache.doris.flink.sink.writer.arrow.ZstdArrowStreamWriterProvider
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 1
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializer.java
+  s_8e35ce17f6a1a5::t_19a8571b6f3ada 248-249
+flink-doris-connector/flink-doris-connector-flink2/pom.xml
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 62,67-69
+  s_8e35ce17f6a1a5::t_cfa5ab18244cc7 63-66
+.github/workflows/run-itcase-flink1.yml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 45
+POC_ARTIFACT.md
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 1-19
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ArrowSerializer.java
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 59-61,101-102,183
+UPSTREAM_CONTRIBUTION_PLAN.md
+  s_8e35ce17f6a1a5::t_19a8571b6f3ada 160-161
+  s_8e35ce17f6a1a5::t_5ec4900e23bb46 111-119,162-163
+.github/workflows/run-e2ecase-flink1.yml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 45,47
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ZstdArrowStreamWriterProvider.java
+  s_8e35ce17f6a1a5::t_af7202ab2540ab 1-50
+.github/workflows/run-itcase-flink2.yml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 48,94
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializerCompatibilityTest.java
+  s_8e35ce17f6a1a5::t_107d177fc9920c 83,109-129
+  s_8e35ce17f6a1a5::t_99d3d76bb7d036 130-131
+flink-doris-connector/flink-doris-connector-flink2/src/test/java/org/apache/doris/flink/sink/writer/arrow/Flink2ZstdArrowStreamWriterProviderTest.java
+  s_8e35ce17f6a1a5::t_107d177fc9920c 1-66
+  s_8e35ce17f6a1a5::t_bee3e5b198c07d 67
+.github/workflows/publish-poc-package.yml
+  s_8e35ce17f6a1a5::t_6ed6bf38923b90 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "f17d0fe7cc89ad172f575bf8226e50bcd7aac56a",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
