@@ -4,23 +4,24 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - observable-flush-26.0.0-poc.2-build.*
+      - observable-flush-26.0.0-poc.3-build.*
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: publish-observable-flush-26.0.0-poc.2
+  group: publish-observable-flush-26.0.0-poc.3
   cancel-in-progress: false
 
 env:
   FLINK_VERSION: 2.1.2
   FLINK_MAJOR_VERSION: "2.1"
-  POC_VERSION: 26.0.0-poc.2
+  POC_VERSION: 26.0.0-poc.3
   UPSTREAM_BASE_COMMIT: 825b7bbe9647d54398eed91870219f322c617967
   JDK21_PATCH_COMMIT: c73add2959560899f92c2e3906d20cbc5d3282ae
   OBSERVABLE_FLUSH_PATCH_COMMIT: e04ea44015a61e88baabc7b90645ae900cdb67ca
+  SERIALIZER_COMPATIBILITY_PATCH_COMMIT: 453df68a4eb86ac634aecd712f2922335463937d
   PACKAGE_REPOSITORY: https://maven.pkg.github.com/Sbaia/doris-flink-connector
 
 jobs:
@@ -40,6 +41,7 @@ jobs:
           git merge-base --is-ancestor "${UPSTREAM_BASE_COMMIT}" HEAD
           git merge-base --is-ancestor "${JDK21_PATCH_COMMIT}" HEAD
           git merge-base --is-ancestor "${OBSERVABLE_FLUSH_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${SERIALIZER_COMPATIBILITY_PATCH_COMMIT}" HEAD
           git diff --check "${UPSTREAM_BASE_COMMIT}" HEAD
 
       - name: Set up JDK 21 and Maven package credentials

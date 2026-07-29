@@ -1,16 +1,17 @@
 # Observable synchronous flush POC artifact
 
-This fork publishes `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.2` to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing.
+This fork publishes `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.3` to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing.
 
 The version is pinned to this provenance chain:
 
 - Apache upstream base: `825b7bbe9647d54398eed91870219f322c617967`
 - Flink 2 and JDK 21 patch: `c73add2959560899f92c2e3906d20cbc5d3282ae`
 - Observable flush and visibility patches through: `e04ea44015a61e88baabc7b90645ae900cdb67ca`
+- Arrow/ZSTD and deterministic serialization-drop compatibility: `453df68a4eb86ac634aecd712f2922335463937d`
 
-The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.2-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
+The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.3-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
 
-`26.0.0-poc.1` is withdrawn and must not be consumed: its package upload succeeded, but its published child POM retained a literal `${revision}` parent version and therefore could not be resolved outside the source reactor. The package is left untouched as immutable failure evidence; `26.0.0-poc.2` is the first consumable version.
+`26.0.0-poc.1` is withdrawn and must not be consumed: its package upload succeeded, but its published child POM retained a literal `${revision}` parent version and therefore could not be resolved outside the source reactor. The package is left untouched as immutable failure evidence. `26.0.0-poc.2` is the first consumable observable-flush build; `26.0.0-poc.3` adds the generic Arrow/ZSTD and deterministic drop APIs required by the pipeline.
 
 Consumers authenticate Maven server `github` using environment-backed credentials. For example, CI may map `GITHUB_ACTOR` and a read-only package token through Maven `settings.xml`; credentials must never be written to a project POM or committed settings file.
 

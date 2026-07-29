@@ -8,7 +8,7 @@
     <version>1.0.0</version>
 
     <properties>
-        <doris.connector.version>26.0.0-poc.2</doris.connector.version>
+        <doris.connector.version>26.0.0-poc.3</doris.connector.version>
     </properties>
 
     <repositories>
