@@ -8,8 +8,7 @@
     <version>1.0.0</version>
 
     <properties>
-        <doris.connector.version>26.0.0-poc.1</doris.connector.version>
-        <flink.version>2.1.2</flink.version>
+        <doris.connector.version>26.0.0-poc.2</doris.connector.version>
     </properties>
 
     <repositories>
@@ -24,11 +23,6 @@
             <groupId>org.apache.doris</groupId>
             <artifactId>flink-doris-connector-2.1</artifactId>
             <version>${doris.connector.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-java</artifactId>
-            <version>${flink.version}</version>
         </dependency>
     </dependencies>
 

@@ -4,20 +4,20 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - observable-flush-26.0.0-poc.1-build.*
+      - observable-flush-26.0.0-poc.2-build.*
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: publish-observable-flush-26.0.0-poc.1
+  group: publish-observable-flush-26.0.0-poc.2
   cancel-in-progress: false
 
 env:
   FLINK_VERSION: 2.1.2
   FLINK_MAJOR_VERSION: "2.1"
-  POC_VERSION: 26.0.0-poc.1
+  POC_VERSION: 26.0.0-poc.2
   UPSTREAM_BASE_COMMIT: 825b7bbe9647d54398eed91870219f322c617967
   JDK21_PATCH_COMMIT: c73add2959560899f92c2e3906d20cbc5d3282ae
   OBSERVABLE_FLUSH_PATCH_COMMIT: e04ea44015a61e88baabc7b90645ae900cdb67ca
@@ -59,7 +59,7 @@ jobs:
           set -euo pipefail
           ./mvnw \
             -f flink-doris-connector/pom.xml \
-            -Pflink2 \
+            -Pflink2,poc-release \
             -pl flink-doris-connector-flink2 \
             -am \
             -Dflink.version="${FLINK_VERSION}" \
