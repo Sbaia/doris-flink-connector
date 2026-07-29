@@ -1,0 +1,19 @@
+POC_ARTIFACT.md
+  s_8e35ce17f6a1a5::t_03d18e824d8f11 20-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "109ba989b5ff0dc8186fac111cca66179e4e66be",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
