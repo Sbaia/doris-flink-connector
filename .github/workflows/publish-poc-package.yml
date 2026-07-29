@@ -2,6 +2,9 @@ name: Publish observable flush POC package
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - observable-flush-26.0.0-poc.1
 
 permissions:
   contents: read
