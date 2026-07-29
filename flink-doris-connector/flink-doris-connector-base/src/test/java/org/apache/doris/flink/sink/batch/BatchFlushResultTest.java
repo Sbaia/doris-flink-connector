@@ -38,7 +38,8 @@ public class BatchFlushResultTest {
                                 + "\"NumberLoadedRows\":2,\"NumberFilteredRows\":0,"
                                 + "\"NumberUnselectedRows\":0,\"LoadBytes\":12}",
                         RespContent.class);
-        BatchLoadResult load = BatchLoadResult.completed(1L, 1L, "db", "tbl", 2L, 12L, response);
+        BatchLoadResult load =
+                BatchLoadResult.completed(1L, 1L, "db", "tbl", 2L, 12L, "VISIBLE", response);
         List<BatchLoadResult> mutableLoads = new ArrayList<>();
         mutableLoads.add(load);
 
@@ -49,6 +50,11 @@ public class BatchFlushResultTest {
         Assert.assertEquals(0L, result.getFromSequenceExclusive());
         Assert.assertEquals(1L, result.getThroughSequenceInclusive());
         Assert.assertEquals(1, result.getLoadResults().size());
+        Assert.assertEquals(2L, result.getSubmittedRows());
+        Assert.assertEquals(2L, result.getTotalRows());
+        Assert.assertEquals(2L, result.getLoadedRows());
+        Assert.assertEquals(0L, result.getFilteredRows());
+        Assert.assertEquals(0L, result.getUnselectedRows());
         Assert.assertEquals("OK", result.getLoadResults().get(0).getMessage());
         Assert.assertEquals(Long.valueOf(2L), result.getLoadResults().get(0).getLoadedRows());
         Assert.assertEquals(2L, result.getLoadResults().get(0).getSubmittedRows());

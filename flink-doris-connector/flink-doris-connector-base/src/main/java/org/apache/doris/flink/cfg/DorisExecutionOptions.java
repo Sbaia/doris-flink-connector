@@ -45,6 +45,8 @@ public class DorisExecutionOptions implements Serializable {
     private static final int DEFAULT_BUFFER_FLUSH_MAX_ROWS = 500000;
     private static final int DEFAULT_BUFFER_FLUSH_MAX_BYTES = 100 * 1024 * 1024;
     private static final long DEFAULT_BUFFER_FLUSH_INTERVAL_MS = 10 * 1000;
+    public static final long DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS = 200L;
+    public static final long DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS = 60_000L;
     private final int checkInterval;
     private final int maxRetries;
     private final int bufferSize;
@@ -69,6 +71,8 @@ public class DorisExecutionOptions implements Serializable {
     private final boolean ignoreUpdateBefore;
     private final WriteMode writeMode;
     private final boolean ignoreCommitError;
+    private final long loadVisibilityPollIntervalMs;
+    private final long loadVisibilityTimeoutMs;
 
     public DorisExecutionOptions(
             int checkInterval,
@@ -90,7 +94,57 @@ public class DorisExecutionOptions implements Serializable {
             boolean force2PC,
             WriteMode writeMode,
             boolean ignoreCommitError) {
+        this(
+                checkInterval,
+                maxRetries,
+                bufferSize,
+                bufferCount,
+                labelPrefix,
+                useCache,
+                httpUtf8Charset,
+                streamLoadProp,
+                enableDelete,
+                enable2PC,
+                enableBatchMode,
+                flushQueueSize,
+                bufferFlushMaxRows,
+                bufferFlushMaxBytes,
+                bufferFlushIntervalMs,
+                ignoreUpdateBefore,
+                force2PC,
+                writeMode,
+                ignoreCommitError,
+                DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS,
+                DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS);
+    }
+
+    public DorisExecutionOptions(
+            int checkInterval,
+            int maxRetries,
+            int bufferSize,
+            int bufferCount,
+            String labelPrefix,
+            boolean useCache,
+            boolean httpUtf8Charset,
+            Properties streamLoadProp,
+            Boolean enableDelete,
+            Boolean enable2PC,
+            boolean enableBatchMode,
+            int flushQueueSize,
+            int bufferFlushMaxRows,
+            int bufferFlushMaxBytes,
+            long bufferFlushIntervalMs,
+            boolean ignoreUpdateBefore,
+            boolean force2PC,
+            WriteMode writeMode,
+            boolean ignoreCommitError,
+            long loadVisibilityPollIntervalMs,
+            long loadVisibilityTimeoutMs) {
         Preconditions.checkArgument(maxRetries >= 0);
+        Preconditions.checkArgument(
+                loadVisibilityPollIntervalMs > 0, "loadVisibilityPollIntervalMs must be positive");
+        Preconditions.checkArgument(
+                loadVisibilityTimeoutMs > 0, "loadVisibilityTimeoutMs must be positive");
         this.checkInterval = checkInterval;
         this.maxRetries = maxRetries;
         this.bufferSize = bufferSize;
@@ -112,6 +166,8 @@ public class DorisExecutionOptions implements Serializable {
         this.ignoreUpdateBefore = ignoreUpdateBefore;
         this.writeMode = writeMode;
         this.ignoreCommitError = ignoreCommitError;
+        this.loadVisibilityPollIntervalMs = loadVisibilityPollIntervalMs;
+        this.loadVisibilityTimeoutMs = loadVisibilityTimeoutMs;
     }
 
     public static Builder builder() {
@@ -223,6 +279,14 @@ public class DorisExecutionOptions implements Serializable {
         return ignoreCommitError;
     }
 
+    public long getLoadVisibilityPollIntervalMs() {
+        return loadVisibilityPollIntervalMs;
+    }
+
+    public long getLoadVisibilityTimeoutMs() {
+        return loadVisibilityTimeoutMs;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -246,6 +310,8 @@ public class DorisExecutionOptions implements Serializable {
                 && enableBatchMode == that.enableBatchMode
                 && ignoreUpdateBefore == that.ignoreUpdateBefore
                 && ignoreCommitError == that.ignoreCommitError
+                && loadVisibilityPollIntervalMs == that.loadVisibilityPollIntervalMs
+                && loadVisibilityTimeoutMs == that.loadVisibilityTimeoutMs
                 && Objects.equals(labelPrefix, that.labelPrefix)
                 && Objects.equals(streamLoadProp, that.streamLoadProp)
                 && Objects.equals(enableDelete, that.enableDelete)
@@ -274,7 +340,9 @@ public class DorisExecutionOptions implements Serializable {
                 enableBatchMode,
                 ignoreUpdateBefore,
                 writeMode,
-                ignoreCommitError);
+                ignoreCommitError,
+                loadVisibilityPollIntervalMs,
+                loadVisibilityTimeoutMs);
     }
 
     /** Builder of {@link DorisExecutionOptions}. */
@@ -303,6 +371,20 @@ public class DorisExecutionOptions implements Serializable {
         private boolean ignoreUpdateBefore = true;
         private WriteMode writeMode = WriteMode.STREAM_LOAD;
         private boolean ignoreCommitError = false;
+        private long loadVisibilityPollIntervalMs = DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS;
+        private long loadVisibilityTimeoutMs = DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS;
+
+        /** Sets the interval between Stream Load transaction visibility checks. */
+        public Builder setLoadVisibilityPollIntervalMs(long loadVisibilityPollIntervalMs) {
+            this.loadVisibilityPollIntervalMs = loadVisibilityPollIntervalMs;
+            return this;
+        }
+
+        /** Sets the maximum time to wait for a Stream Load transaction to become visible. */
+        public Builder setLoadVisibilityTimeoutMs(long loadVisibilityTimeoutMs) {
+            this.loadVisibilityTimeoutMs = loadVisibilityTimeoutMs;
+            return this;
+        }
 
         /**
          * Sets the checkInterval to check exception with the interval while loading, The default is
@@ -569,7 +651,9 @@ public class DorisExecutionOptions implements Serializable {
                     ignoreUpdateBefore,
                     force2PC,
                     writeMode,
-                    ignoreCommitError);
+                    ignoreCommitError,
+                    loadVisibilityPollIntervalMs,
+                    loadVisibilityTimeoutMs);
         }
     }
 }

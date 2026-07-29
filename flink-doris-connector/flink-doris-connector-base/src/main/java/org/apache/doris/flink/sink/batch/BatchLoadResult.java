@@ -32,6 +32,7 @@ public final class BatchLoadResult implements Serializable {
     private final String label;
     private final Long transactionId;
     private final String status;
+    private final String transactionStatus;
     private final String existingJobStatus;
     private final String message;
     private final String errorUrl;
@@ -49,6 +50,7 @@ public final class BatchLoadResult implements Serializable {
             String table,
             long submittedRows,
             long submittedBytes,
+            String transactionStatus,
             RespContent response) {
         if (firstSequence <= 0 || lastSequence < firstSequence) {
             throw new IllegalArgumentException("Invalid load sequence range");
@@ -62,14 +64,15 @@ public final class BatchLoadResult implements Serializable {
         }
         this.firstSequence = firstSequence;
         this.lastSequence = lastSequence;
-        this.database = database;
-        this.table = table;
-        this.label = response.getLabel();
+        this.database = LoadDiagnosticSanitizer.text(database);
+        this.table = LoadDiagnosticSanitizer.text(table);
+        this.label = LoadDiagnosticSanitizer.text(response.getLabel());
         this.transactionId = response.getTxnId();
-        this.status = response.getStatus();
-        this.existingJobStatus = response.getExistingJobStatus();
-        this.message = response.getMessage();
-        this.errorUrl = response.getErrorURL();
+        this.status = LoadDiagnosticSanitizer.text(response.getStatus());
+        this.transactionStatus = LoadDiagnosticSanitizer.text(transactionStatus);
+        this.existingJobStatus = LoadDiagnosticSanitizer.text(response.getExistingJobStatus());
+        this.message = LoadDiagnosticSanitizer.text(response.getMessage());
+        this.errorUrl = LoadDiagnosticSanitizer.url(response.getErrorURL());
         this.submittedRows = submittedRows;
         this.submittedBytes = submittedBytes;
         this.totalRows = response.getNumberTotalRows();
@@ -85,6 +88,7 @@ public final class BatchLoadResult implements Serializable {
             String table,
             long submittedRows,
             long submittedBytes,
+            String transactionStatus,
             RespContent response) {
         return new BatchLoadResult(
                 firstSequence,
@@ -93,6 +97,7 @@ public final class BatchLoadResult implements Serializable {
                 table,
                 submittedRows,
                 submittedBytes,
+                transactionStatus,
                 response);
     }
 
@@ -122,6 +127,10 @@ public final class BatchLoadResult implements Serializable {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getTransactionStatus() {
+        return transactionStatus;
     }
 
     public String getExistingJobStatus() {

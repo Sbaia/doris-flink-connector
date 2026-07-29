@@ -117,6 +117,7 @@ public class DorisBatchStreamLoad implements Serializable {
     private final Map<String, ReadWriteLock> bufferMapLock = new ConcurrentHashMap<>();
     private final AtomicLong nextLoadSequence = new AtomicLong(0L);
     private final BatchFlushResultTracker flushResultTracker;
+    private final BatchLoadOutcomeValidator loadOutcomeValidator;
     private long lastDrainedSequence;
 
     public DorisBatchStreamLoad(
@@ -134,6 +135,15 @@ public class DorisBatchStreamLoad implements Serializable {
         this.username = dorisOptions.getUsername();
         this.password = dorisOptions.getPassword();
         this.loadProps = executionOptions.getStreamLoadProp();
+        this.loadOutcomeValidator =
+                new BatchLoadOutcomeValidator(
+                        (database, label) ->
+                                RestService.getLoadState(
+                                        dorisOptions, dorisReadOptions, database, label, LOG),
+                        Thread::sleep,
+                        System::currentTimeMillis,
+                        executionOptions.getLoadVisibilityPollIntervalMs(),
+                        executionOptions.getLoadVisibilityTimeoutMs());
         this.labelGenerator = labelGenerator;
         if (loadProps.getProperty(FORMAT_KEY, CSV).equals(ARROW)) {
             this.lineDelimiter = null;
@@ -264,6 +274,8 @@ public class DorisBatchStreamLoad implements Serializable {
     /** Flushes all current buffers and returns the next non-overlapping completed load epoch. */
     public synchronized BatchFlushResult flushAndWait() throws InterruptedException {
         checkFlushException();
+        BatchLoadOutcomeValidator.validateVisibleAckGroupCommitMode(
+                loadProps.getProperty(GROUP_COMMIT));
         flushResultTracker.beginDrain();
         try {
             flush(null, true);
@@ -554,9 +566,17 @@ public class DorisBatchStreamLoad implements Serializable {
                         String reason = response.getStatusLine().toString();
                         if (statusCode == 200 && response.getEntity() != null) {
                             String loadResult = EntityUtils.toString(response.getEntity());
-                            LOG.info("load Result {}", loadResult);
                             RespContent respContent =
                                     OBJECT_MAPPER.readValue(loadResult, RespContent.class);
+                            LOG.info(
+                                    "Stream Load response status={}, label={}, txnId={}, totalRows={}, loadedRows={}, filteredRows={}, unselectedRows={}",
+                                    LoadDiagnosticSanitizer.text(respContent.getStatus()),
+                                    LoadDiagnosticSanitizer.text(respContent.getLabel()),
+                                    respContent.getTxnId(),
+                                    respContent.getNumberTotalRows(),
+                                    respContent.getNumberLoadedRows(),
+                                    respContent.getNumberFilteredRows(),
+                                    respContent.getNumberUnselectedRows());
                             if (DORIS_SUCCESS_STATUS.contains(respContent.getStatus())) {
                                 long cacheByteBeforeFlush =
                                         currentCacheBytes.getAndAdd(-buffer.getBufferSizeBytes());
@@ -578,15 +598,20 @@ public class DorisBatchStreamLoad implements Serializable {
                                     // sometimes stream load will not return message
                                     errMsg =
                                             String.format(
-                                                    "stream load error, response is %s",
-                                                    loadResult);
+                                                    "stream load error: status=%s, label=%s",
+                                                    LoadDiagnosticSanitizer.text(
+                                                            respContent.getStatus()),
+                                                    LoadDiagnosticSanitizer.text(
+                                                            respContent.getLabel()));
                                     throw new DorisBatchLoadException(errMsg);
                                 } else {
                                     errMsg =
                                             String.format(
                                                     "stream load error: %s, see more in %s",
-                                                    respContent.getMessage(),
-                                                    respContent.getErrorURL());
+                                                    LoadDiagnosticSanitizer.text(
+                                                            respContent.getMessage()),
+                                                    LoadDiagnosticSanitizer.url(
+                                                            respContent.getErrorURL()));
                                 }
                                 throw new DorisBatchLoadException(errMsg);
                             }
@@ -607,6 +632,9 @@ public class DorisBatchStreamLoad implements Serializable {
                         LOG.error("stream load error with {}, to retry, cause by", hostPort, ex);
                     }
                 }
+                if (retry >= executionOptions.getMaxRetries()) {
+                    break;
+                }
                 retry++;
                 // get available backend retry
                 refreshLoadUrl(buffer.getDatabase(), buffer.getTable());
@@ -625,11 +653,7 @@ public class DorisBatchStreamLoad implements Serializable {
             buffer.clear();
             buffer = null;
 
-            if (retry >= executionOptions.getMaxRetries()) {
-                throw new DorisBatchLoadException(
-                        "stream load error: " + resEx.getMessage(), resEx);
-            }
-            throw new DorisBatchLoadException("stream load ended without a result");
+            throw new DorisBatchLoadException("stream load error: " + resEx.getMessage(), resEx);
         }
 
         private void refreshLoadUrl(String database, String table) {
@@ -638,8 +662,11 @@ public class DorisBatchStreamLoad implements Serializable {
         }
     }
 
-    private BatchLoadResult toLoadResult(BatchRecordBuffer buffer, RespContent response) {
-        return BatchLoadResult.completed(
+    private BatchLoadResult toLoadResult(BatchRecordBuffer buffer, RespContent response)
+            throws InterruptedException {
+        BatchLoadOutcomeValidator.validateVisibleAckGroupCommitMode(
+                loadProps.getProperty(GROUP_COMMIT));
+        return loadOutcomeValidator.validate(
                 buffer.getFirstSequence(),
                 buffer.getLastSequence(),
                 buffer.getDatabase(),

@@ -32,10 +32,12 @@ public class BatchBufferHttpEntity extends AbstractHttpEntity {
     protected static final int OUTPUT_BUFFER_SIZE = 4096;
     private final List<byte[]> buffer;
     private final long contentLength;
+    private final int recordCount;
 
     public BatchBufferHttpEntity(BatchRecordBuffer recordBuffer) {
         this.buffer = recordBuffer.getBuffer();
         this.contentLength = recordBuffer.getBufferSizeBytes();
+        this.recordCount = recordBuffer.getNumOfRecords();
     }
 
     @Override
@@ -51,6 +53,10 @@ public class BatchBufferHttpEntity extends AbstractHttpEntity {
     @Override
     public long getContentLength() {
         return contentLength;
+    }
+
+    int getRecordCount() {
+        return recordCount;
     }
 
     @Override

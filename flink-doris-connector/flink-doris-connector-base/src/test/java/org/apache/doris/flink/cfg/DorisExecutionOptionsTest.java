@@ -161,4 +161,24 @@ public class DorisExecutionOptionsTest {
         DorisExecutionOptions.Builder builder = DorisExecutionOptions.builder().setMaxRetries(-1);
         builder.build();
     }
+
+    @Test
+    public void testVisibleLoadPollingConfiguration() {
+        DorisExecutionOptions defaults = DorisExecutionOptions.builder().build();
+        Assert.assertEquals(200L, defaults.getLoadVisibilityPollIntervalMs());
+        Assert.assertEquals(60_000L, defaults.getLoadVisibilityTimeoutMs());
+
+        DorisExecutionOptions configured =
+                DorisExecutionOptions.builder()
+                        .setLoadVisibilityPollIntervalMs(25L)
+                        .setLoadVisibilityTimeoutMs(5_000L)
+                        .build();
+        Assert.assertEquals(25L, configured.getLoadVisibilityPollIntervalMs());
+        Assert.assertEquals(5_000L, configured.getLoadVisibilityTimeoutMs());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testVisibleLoadPollingConfigurationMustBePositive() {
+        DorisExecutionOptions.builder().setLoadVisibilityTimeoutMs(0L).build();
+    }
 }

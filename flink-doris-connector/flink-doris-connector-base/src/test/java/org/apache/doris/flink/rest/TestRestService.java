@@ -153,6 +153,20 @@ public class TestRestService {
     }
 
     @Test
+    public void testParseLoadStateSupportsDocumentedAndObjectResponses() throws Exception {
+        Assert.assertEquals("VISIBLE", RestService.parseLoadState("\"VISIBLE\""));
+        Assert.assertEquals("COMMITTED", RestService.parseLoadState("{\"state\":\"COMMITTED\"}"));
+        Assert.assertEquals("ABORTED", RestService.parseLoadState("{\"State\":\"ABORTED\"}"));
+    }
+
+    @Test
+    public void testParseLoadStateRejectsMalformedResponses() throws Exception {
+        thrown.expect(DorisRuntimeException.class);
+        thrown.expectMessage("malformed transaction state");
+        RestService.parseLoadState("{\"unexpected\":true}");
+    }
+
+    @Test
     public void testFeResponseToSchema() throws Exception {
         String res =
                 "{\"properties\":[{\"type\":\"TINYINT\",\"name\":\"k1\",\"comment\":\"\",\"aggregation_type\":\"\"},{\"name\":\"k5\","

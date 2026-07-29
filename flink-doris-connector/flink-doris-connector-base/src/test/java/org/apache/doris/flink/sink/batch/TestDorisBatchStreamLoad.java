@@ -219,7 +219,7 @@ public class TestDorisBatchStreamLoad {
             CloseableHttpResponse failResponse =
                     HttpTestUtil.getResponse("server error 404", false);
             CloseableHttpResponse successResponse =
-                    HttpTestUtil.getResponse(HttpTestUtil.PRE_COMMIT_TABLE_RESPONSE, true);
+                    HttpTestUtil.getResponse(HttpTestUtil.COMMIT_TABLE_RESPONSE, true);
             ArgumentCaptor<HttpUriRequest> requestCaptor =
                     ArgumentCaptor.forClass(HttpUriRequest.class);
 

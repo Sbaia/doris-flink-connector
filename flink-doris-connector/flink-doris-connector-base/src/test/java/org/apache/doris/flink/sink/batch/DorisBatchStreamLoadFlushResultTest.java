@@ -27,6 +27,8 @@ import org.apache.doris.flink.sink.BackendUtil;
 import org.apache.doris.flink.sink.HttpTestUtil;
 import org.apache.doris.flink.sink.TestUtil;
 import org.apache.doris.flink.sink.writer.LabelGenerator;
+import org.apache.doris.flink.sink.writer.LoadConstants;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
@@ -38,6 +40,7 @@ import org.mockito.MockedStatic;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -289,17 +292,54 @@ public class DorisBatchStreamLoadFlushResultTest {
         Assert.assertEquals(0, loader.getTrackedCompletionCount());
     }
 
+    @Test
+    public void visibleFlushRejectsAsyncGroupCommitBeforeSubmittingBufferedRows() throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty(LoadConstants.GROUP_COMMIT, LoadConstants.GROUP_COMMIT_ASYNC_MODE);
+        loader = createLoader(10_000, 8, properties);
+        configureSuccessfulHttpClient(loader);
+        loader.writeRecord("db", "tbl", "one".getBytes(StandardCharsets.UTF_8));
+
+        try {
+            loader.flushAndWait();
+            Assert.fail("async group commit must not produce visible flush results");
+        } catch (DorisBatchLoadException expected) {
+            Assert.assertTrue(expected.getMessage().contains("async_mode"));
+        }
+        Assert.assertEquals(0, loader.getPendingFlushCount());
+    }
+
+    @Test
+    public void visibleFlushExplicitlySupportsOffMode() throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty(LoadConstants.GROUP_COMMIT, LoadConstants.GROUP_COMMIT_OFF_MODE);
+        loader = createLoader(10_000, 8, properties);
+        configureSuccessfulHttpClient(loader);
+        loader.writeRecord("db", "tbl", "one".getBytes(StandardCharsets.UTF_8));
+
+        BatchLoadResult result = loader.flushAndWait().getLoadResults().get(0);
+
+        Assert.assertEquals("VISIBLE", result.getTransactionStatus());
+    }
+
     private DorisBatchStreamLoad createLoader(int maxRows) throws Exception {
         return createLoader(maxRows, 8);
     }
 
     private DorisBatchStreamLoad createLoader(int maxRows, int queueSize) throws Exception {
+        return createLoader(maxRows, queueSize, new Properties());
+    }
+
+    private DorisBatchStreamLoad createLoader(
+            int maxRows, int queueSize, Properties streamLoadProperties) throws Exception {
+        streamLoadProperties.putIfAbsent(LoadConstants.COMPRESS_TYPE, "none");
         DorisExecutionOptions executionOptions =
                 DorisExecutionOptions.builder()
                         .setBufferFlushMaxRows(maxRows)
                         .setBufferFlushIntervalMs(60_000)
                         .setFlushQueueSize(queueSize)
                         .setMaxRetries(0)
+                        .setStreamLoadProp(streamLoadProperties)
                         .build();
         DorisOptions options =
                 DorisOptions.builder()
@@ -324,7 +364,13 @@ public class DorisBatchStreamLoadFlushResultTest {
 
     private void configureSuccessfulHttpClient(DorisBatchStreamLoad target) throws Exception {
         configureHttpClient(
-                target, ignored -> HttpTestUtil.getResponse(successfulResponse(), true));
+                target,
+                invocation -> {
+                    HttpPut request = invocation.getArgument(0);
+                    BatchBufferHttpEntity entity = (BatchBufferHttpEntity) request.getEntity();
+                    long rows = entity.getRecordCount();
+                    return HttpTestUtil.getResponse(successfulResponse(rows), true);
+                });
     }
 
     private void configureFailingHttpClient(DorisBatchStreamLoad target) throws Exception {
@@ -343,7 +389,7 @@ public class DorisBatchStreamLoadFlushResultTest {
                     if (!releaseRequest.await(5, TimeUnit.SECONDS)) {
                         throw new IllegalStateException("test did not release Stream Load request");
                     }
-                    return HttpTestUtil.getResponse(successfulResponse(), true);
+                    return HttpTestUtil.getResponse(successfulResponse(1L), true);
                 });
     }
 
@@ -362,10 +408,14 @@ public class DorisBatchStreamLoadFlushResultTest {
         target.setHttpClientBuilder(httpClientBuilder);
     }
 
-    private String successfulResponse() {
+    private String successfulResponse(long rows) {
         return "{\"TxnId\":9,\"Label\":\"result-label\","
                 + "\"Status\":\"Success\",\"Message\":\"OK\","
-                + "\"NumberTotalRows\":1,\"NumberLoadedRows\":1,"
+                + "\"NumberTotalRows\":"
+                + rows
+                + ",\"NumberLoadedRows\":"
+                + rows
+                + ","
                 + "\"NumberFilteredRows\":0,"
                 + "\"NumberUnselectedRows\":0,\"LoadBytes\":3}";
     }
