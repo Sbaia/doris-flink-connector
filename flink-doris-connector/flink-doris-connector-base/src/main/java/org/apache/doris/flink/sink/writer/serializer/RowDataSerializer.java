@@ -19,7 +19,6 @@ package org.apache.doris.flink.sink.writer.serializer;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.runtime.arrow.serializers.ArrowSerializer;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
@@ -30,6 +29,7 @@ import org.apache.flink.util.Preconditions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.doris.flink.deserialization.converter.DorisRowConverter;
 import org.apache.doris.flink.sink.EscapeHandler;
+import org.apache.doris.flink.sink.writer.arrow.ArrowSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +37,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -62,17 +63,24 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
     private final int arrowBatchCnt = 1000;
     private int arrowWriteCnt = 0;
     private final DataType[] dataTypes;
+    private final boolean arrowCompression;
+    private final DorisWriteFailureListener failureListener;
 
     private RowDataSerializer(
             String[] fieldNames,
             DataType[] dataTypes,
             String type,
             String fieldDelimiter,
-            boolean enableDelete) {
+            boolean enableDelete,
+            boolean arrowCompression,
+            DorisWriteFailureListener failureListener) {
         this.fieldNames = fieldNames;
         this.type = type;
         this.fieldDelimiter = fieldDelimiter;
         this.enableDelete = enableDelete;
+        this.arrowCompression = arrowCompression;
+        this.failureListener =
+                failureListener != null ? failureListener : DorisWriteFailureListener.NOOP;
         if (JSON.equals(type)) {
             objectMapper = new ObjectMapper();
         }
@@ -85,7 +93,7 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         if (ARROW.equals(type)) {
             LogicalType[] logicalTypes = TypeConversions.fromDataToLogicalType(dataTypes);
             RowType rowType = RowType.of(logicalTypes, fieldNames);
-            arrowSerializer = new ArrowSerializer(rowType, rowType);
+            arrowSerializer = new ArrowSerializer(rowType, rowType, arrowCompression);
             outputStream = new ByteArrayOutputStream();
             try {
                 arrowSerializer.open(new ByteArrayInputStream(new byte[0]), outputStream);
@@ -127,6 +135,29 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         }
     }
 
+    /**
+     * Returns the number of rows currently buffered by the Arrow serializer. Non-Arrow formats
+     * never buffer rows and therefore return zero.
+     */
+    public int getBufferedRowCount() {
+        return ARROW.equals(type) ? arrowWriteCnt : 0;
+    }
+
+    /**
+     * Drops and resets the current Arrow batch after a deterministic row-write failure. The same
+     * listener contract as a batch-finalization failure is used so callers can account for every
+     * buffered row exactly once.
+     */
+    public void discardBufferedArrowBatch(Exception cause) {
+        Preconditions.checkNotNull(cause, "cause must not be null");
+        if (!ARROW.equals(type) || arrowWriteCnt == 0) {
+            return;
+        }
+        int batchSize = arrowWriteCnt;
+        arrowWriteCnt = 0;
+        recoverDroppedArrowBatch(batchSize, cause);
+    }
+
     @Override
     public void close() throws Exception {
         if (ARROW.equals(type)) {
@@ -134,10 +165,15 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         }
     }
 
+    // Batch is dropped on Arrow serialization failure rather than rethrown, so a
+    // poison-pill batch can never fail the job. The failure listener routes the
+    // drop to the DLQ (see DorisWriteFailureListener); this method's own fallback
+    // stays drop-and-recover regardless of what the listener does.
     public DorisRecord arrowToDorisRecord() {
         if (arrowWriteCnt == 0) {
             return DorisRecord.empty;
         }
+        int batchSize = arrowWriteCnt;
         arrowWriteCnt = 0;
         try {
             arrowSerializer.finishCurrentBatch();
@@ -146,9 +182,33 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
             arrowSerializer.resetWriter();
             return DorisRecord.of(bytes);
         } catch (Exception e) {
-            LOG.error("Failed to convert arrow batch:", e);
+            LOG.error("Arrow batch serialization failed, dropping {} records", batchSize, e);
+            recoverDroppedArrowBatch(batchSize, e);
         }
         return DorisRecord.empty;
+    }
+
+    private void recoverDroppedArrowBatch(int batchSize, Exception cause) {
+        try {
+            outputStream.reset();
+            arrowSerializer.resetWriter();
+        } catch (Exception resetFailure) {
+            LOG.error("Failed to reset Arrow writer after serialization failure", resetFailure);
+        }
+        notifyFailureListener(batchSize, cause);
+    }
+
+    // The failure listener must never break the drop-and-recover fallback above,
+    // so a misbehaving listener is caught and logged, not propagated.
+    private void notifyFailureListener(int batchSize, Exception cause) {
+        try {
+            failureListener.onArrowBatchFailure(batchSize, cause);
+        } catch (Exception listenerEx) {
+            LOG.error(
+                    "Doris write failure listener threw while handling a dropped batch of {} records",
+                    batchSize,
+                    listenerEx);
+        }
     }
 
     public String buildJsonString(RowData record, int maxIndex) throws IOException {
@@ -156,7 +216,7 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         Map<String, String> valueMap = new HashMap<>();
         while (fieldIndex < maxIndex) {
             Object field = rowConverter.convertExternal(record, fieldIndex);
-            String value = field != null ? field.toString() : null;
+            String value = stringifyField(field);
             valueMap.put(fieldNames[fieldIndex], value);
             fieldIndex++;
         }
@@ -171,7 +231,7 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         StringJoiner joiner = new StringJoiner(fieldDelimiter);
         while (fieldIndex < maxIndex) {
             Object field = rowConverter.convertExternal(record, fieldIndex);
-            String value = field != null ? field.toString() : NULL_VALUE;
+            String value = field != null ? stringifyField(field) : NULL_VALUE;
             joiner.add(value);
             fieldIndex++;
         }
@@ -179,6 +239,16 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
             joiner.add(parseDeleteSign(record.getRowKind()));
         }
         return joiner.toString();
+    }
+
+    private static String stringifyField(Object field) {
+        if (field == null) {
+            return null;
+        }
+        if (field instanceof byte[] bytes) {
+            return Base64.getEncoder().encodeToString(bytes);
+        }
+        return field.toString();
     }
 
     public String parseDeleteSign(RowKind rowKind) {
@@ -202,6 +272,8 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
         private String type;
         private String fieldDelimiter;
         private boolean deletable;
+        private boolean arrowCompression;
+        private DorisWriteFailureListener failureListener;
 
         public Builder setFieldNames(String[] fieldNames) {
             this.fieldNames = fieldNames;
@@ -228,6 +300,20 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
             return this;
         }
 
+        public Builder enableArrowCompression(boolean arrowCompression) {
+            this.arrowCompression = arrowCompression;
+            return this;
+        }
+
+        /**
+         * Sets the listener notified when an Arrow batch fails to serialize and is dropped.
+         * Defaults to {@link DorisWriteFailureListener#NOOP} when not set.
+         */
+        public Builder setFailureListener(DorisWriteFailureListener failureListener) {
+            this.failureListener = failureListener;
+            return this;
+        }
+
         public RowDataSerializer build() {
             Preconditions.checkState(
                     CSV.equals(type) && fieldDelimiter != null
@@ -238,7 +324,14 @@ public class RowDataSerializer implements DorisRecordSerializer<RowData> {
             if (ARROW.equals(type)) {
                 Preconditions.checkArgument(!deletable);
             }
-            return new RowDataSerializer(fieldNames, dataTypes, type, fieldDelimiter, deletable);
+            return new RowDataSerializer(
+                    fieldNames,
+                    dataTypes,
+                    type,
+                    fieldDelimiter,
+                    deletable,
+                    arrowCompression,
+                    failureListener);
         }
     }
 }

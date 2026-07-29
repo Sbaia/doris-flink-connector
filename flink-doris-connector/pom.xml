@@ -99,6 +99,7 @@ under the License.
         <log4j.version>2.17.1</log4j.version>
         <arrow.version>15.0.2</arrow.version>
         <adbc.version>0.12.0</adbc.version>
+        <zstd-jni.version>1.5.7-6</zstd-jni.version>
     </properties>
 
     <modules>
@@ -182,6 +183,11 @@ under the License.
                 <groupId>org.apache.arrow</groupId>
                 <artifactId>arrow-memory-netty</artifactId>
                 <version>${arrow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
             </dependency>
             <!--  jackson  -->
             <dependency>
