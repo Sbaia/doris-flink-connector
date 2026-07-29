@@ -17,3 +17,11 @@ Consumers authenticate Maven server `github` using environment-backed credential
 This personal package is POC-only. It is not approved for shared or production deployment, must not be treated as a release channel, and cannot be promoted in place. Production rollout requires a separately versioned, immutable package owned by Lansweeper and built from reviewed commits.
 
 The workflow, consumer fixture, and `poc-release` Maven profile are release-only fork changes. Generic connector changes remain in earlier separate commits so they can be proposed upstream without GitHub Packages configuration.
+
+## Published evidence
+
+- Source commit: `af44184e4b7b2efb85c583b646d624f82088ef2d`
+- Immutable build tag: `observable-flush-26.0.0-poc.2-build.1`
+- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30467928849`
+- Connector JAR SHA-256: `b6c36f6caac1b9fda89df297f5159f9438909897cd0c179805a48a70d3bfb907`
+- Clean-cache resolution and Maven dependency convergence: passed
