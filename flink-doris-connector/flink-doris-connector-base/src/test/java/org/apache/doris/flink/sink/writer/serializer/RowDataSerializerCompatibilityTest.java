@@ -106,4 +106,34 @@ public class RowDataSerializerCompatibilityTest {
         Assert.assertTrue(new String(record.getRow(), StandardCharsets.ISO_8859_1).length() > 0);
         serializer.close();
     }
+
+    @Test
+    public void uncompressedArrowFlushReleasesAllAllocatorMemoryOnClose() throws Exception {
+        RowDataSerializer first = uncompressedArrowSerializer();
+        RowDataSerializer second = uncompressedArrowSerializer();
+
+        for (RowDataSerializer serializer : new RowDataSerializer[] {first, second}) {
+            serializer.initial();
+            for (int row = 0; row < 7; row++) {
+                serializer.serialize(
+                        GenericRowData.of(
+                                StringData.fromString("site-" + row),
+                                StringData.fromString("entity-" + row),
+                                row));
+            }
+            Assert.assertNotSame(DorisRecord.empty, serializer.flush());
+        }
+
+        first.close();
+        second.close();
+    }
+
+    private static RowDataSerializer uncompressedArrowSerializer() {
+        return RowDataSerializer.builder()
+                .setFieldNames(new String[] {"site_id", "entity_id", "total_count"})
+                .setFieldType(
+                        new DataType[] {DataTypes.STRING(), DataTypes.STRING(), DataTypes.INT()})
+                .setType(LoadConstants.ARROW)
+                .build();
+    }
 }

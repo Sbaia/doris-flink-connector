@@ -129,7 +129,7 @@ public final class ArrowSerializer {
     }
 
     public void close() throws Exception {
-        arrowStreamWriter.end();
+        arrowStreamWriter.close();
         arrowStreamReader.close();
         rootWriter.close();
         allocator.close();
