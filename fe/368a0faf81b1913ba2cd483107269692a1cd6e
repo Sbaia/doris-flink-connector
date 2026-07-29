@@ -1,0 +1,60 @@
+flink-doris-connector/pom.xml
+  s_8e35ce17f6a1a5::t_8dda49ca364d5f 418
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchWriter.java
+  s_8e35ce17f6a1a5::t_a6ee6fc12e99d1 132-136
+  s_8e35ce17f6a1a5::t_d84515019b87bd 137-138,142
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/BatchLoadResult.java
+  s_8e35ce17f6a1a5::t_6bd34690f3b06f 1-161
+  s_8e35ce17f6a1a5::t_cc8be6920a506e 162
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/BatchFlushResult.java
+  s_8e35ce17f6a1a5::t_6bd34690f3b06f 1-75
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/BatchRecordBuffer.java
+  s_8e35ce17f6a1a5::t_d8a810ccb18912 170-177
+  s_8e35ce17f6a1a5::t_17c93f3007ae03 39-40,91-92,160-169,178-195
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoad.java
+  s_8e35ce17f6a1a5::t_41daaa8a3aa8f5 651-655,738
+  s_8e35ce17f6a1a5::t_3d7971861675bf 346-348
+  s_8e35ce17f6a1a5::t_d8a810ccb18912 487-494,496-499,596-599
+  s_8e35ce17f6a1a5::t_17c93f3007ae03 49,118-120,194-211,254-274,330,337,343-345,366-386,433,471-472,483-484,502,513,567,626,635-650,656-737
+  s_8e35ce17f6a1a5::t_4a9acd028473f9 739
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoadFlushResultTest.java
+  s_8e35ce17f6a1a5::t_cf7f1b185fd97e 1-24,26-39,47-74,76-95,261,266-269,271-294,324-328,330-331,340-341
+  s_8e35ce17f6a1a5::t_d8488776b1d0e5 222-235,237-238,247-260,262-265,270
+  s_8e35ce17f6a1a5::t_0d26b168d7154d 25,40-46,96-114,116-117,121-127,133-149,151-200,202,208-221,295,297-299,301-323,329,332-339
+  s_8e35ce17f6a1a5::t_52a106d1e98650 115,118-120,128-132
+  s_8e35ce17f6a1a5::t_adbf09ee6ab0a9 75
+  s_8e35ce17f6a1a5::t_652f25d3dacdb5 150,201,203-207,296,300
+  s_8e35ce17f6a1a5::t_d2520388fd024e 236,239-246
+  s_8e35ce17f6a1a5::t_6afdd1501ba8ce 342
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/BatchFlushResultTest.java
+  s_8e35ce17f6a1a5::t_34dde3ea9a02a5 1-40,42-72
+  s_8e35ce17f6a1a5::t_97f5cc62b73aa6 41
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/TestDorisBatchWriter.java
+  s_8e35ce17f6a1a5::t_2e8132db510a58 24,34-35,37-38,40,85-109,119-125,128-137
+  s_8e35ce17f6a1a5::t_675f8169d006ef 110-118,126-127
+  s_7cf96d195d2196::t_23e1221b840e71 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "fe368a0faf81b1913ba2cd483107269692a1cd6e",
+  "prompts": {},
+  "sessions": {
+    "s_7cf96d195d2196": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f8160-70ca-73a3-83a1-16c05201b3f3",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    },
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
