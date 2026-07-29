@@ -1,0 +1,19 @@
+flink-doris-connector/flink-doris-connector-flink2/src/main/resources/META-INF/services/org.apache.doris.flink.sink.writer.arrow.ZstdArrowStreamWriterProvider
+  s_8e35ce17f6a1a5::t_ce650c8f6d82e4 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "0cf42f9e78fa33e48f5e7c1da80eaf8fcebf9440",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
