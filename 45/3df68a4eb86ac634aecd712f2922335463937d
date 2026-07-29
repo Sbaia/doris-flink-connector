@@ -1,0 +1,38 @@
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ZstdCompressionCodec.java
+  s_8e35ce17f6a1a5::t_62ca1fd0a50026 1-93
+  s_8e35ce17f6a1a5::t_9c1e72bcc5df52 94
+flink-doris-connector/pom.xml
+  s_8e35ce17f6a1a5::t_8d8ead11a210ac 102,187-190
+  s_8e35ce17f6a1a5::t_c9a03e6bbf021b 191
+flink-doris-connector/flink-doris-connector-flink2/pom.xml
+  s_8e35ce17f6a1a5::t_8d8ead11a210ac 167-170
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializer.java
+  s_8e35ce17f6a1a5::t_08d475433215fe 40,66-67,74-76,81-83,96,138-160,168-171,176,185-186,191-213,219,234,244-253,275-276,303-316,327
+  s_8e35ce17f6a1a5::t_3c66707dcd04c1 32,328-334
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/serializer/DorisWriteFailureListener.java
+  s_8e35ce17f6a1a5::t_b968e045f94a17 1-31
+flink-doris-connector/flink-doris-connector-base/pom.xml
+  s_8e35ce17f6a1a5::t_8d8ead11a210ac 139-142
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializerCompatibilityTest.java
+  s_8e35ce17f6a1a5::t_aed6e2a3de58b8 1-21,23-76,79-84,86-91
+  s_8e35ce17f6a1a5::t_b163d33434e9f5 22,77-78,85
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/writer/arrow/ArrowSerializer.java
+  s_8e35ce17f6a1a5::t_5be149c78745ee 1-186
+  s_8e35ce17f6a1a5::t_857b98d022faf2 187-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "453df68a4eb86ac634aecd712f2922335463937d",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
