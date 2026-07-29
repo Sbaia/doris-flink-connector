@@ -30,6 +30,7 @@ public final class BatchFlushResult implements Serializable {
     private final long throughSequenceInclusive;
     private final List<BatchLoadResult> loadResults;
     private final long submittedRows;
+    private final long submittedBytes;
     private final long totalRows;
     private final long loadedRows;
     private final long filteredRows;
@@ -50,6 +51,7 @@ public final class BatchFlushResult implements Serializable {
         this.loadResults =
                 Collections.unmodifiableList(new ArrayList<BatchLoadResult>(loadResults));
         this.submittedRows = sum(loadResults, BatchLoadResult::getSubmittedRows);
+        this.submittedBytes = sum(loadResults, BatchLoadResult::getSubmittedBytes);
         this.totalRows = sum(loadResults, result -> result.getTotalRows());
         this.loadedRows = sum(loadResults, result -> result.getLoadedRows());
         this.filteredRows = sum(loadResults, result -> result.getFilteredRows());
@@ -81,6 +83,10 @@ public final class BatchFlushResult implements Serializable {
 
     public long getSubmittedRows() {
         return submittedRows;
+    }
+
+    public long getSubmittedBytes() {
+        return submittedBytes;
     }
 
     public long getTotalRows() {

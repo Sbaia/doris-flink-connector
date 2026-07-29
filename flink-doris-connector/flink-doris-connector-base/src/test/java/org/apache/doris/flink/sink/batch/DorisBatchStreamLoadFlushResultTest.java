@@ -107,6 +107,9 @@ public class DorisBatchStreamLoadFlushResultTest {
         BatchFlushResult result = loader.flushAndWait();
 
         Assert.assertEquals(7L, result.getSubmittedRows());
+        Assert.assertEquals(
+                "one-arrow-payload".getBytes(StandardCharsets.UTF_8).length,
+                result.getSubmittedBytes());
         Assert.assertEquals(7L, result.getTotalRows());
         Assert.assertEquals(7L, result.getLoadedRows());
         Assert.assertEquals(1, result.getLoadResults().size());
