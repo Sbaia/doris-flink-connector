@@ -347,6 +347,20 @@ public class DorisBatchStreamLoadFlushResultTest {
         Assert.assertEquals("VISIBLE", result.getTransactionStatus());
     }
 
+    @Test
+    public void writeRecordWithSizeReturnsExactBufferedBytesIncludingDelimiter() throws Exception {
+        loader = createLoader(10_000, 8);
+
+        Assert.assertEquals(
+                3,
+                loader.writeRecordAndGetBufferedBytes(
+                        "db", "tbl", "one".getBytes(StandardCharsets.UTF_8), 1L));
+        Assert.assertEquals(
+                4,
+                loader.writeRecordAndGetBufferedBytes(
+                        "db", "tbl", "two".getBytes(StandardCharsets.UTF_8), 1L));
+    }
+
     private DorisBatchStreamLoad createLoader(int maxRows) throws Exception {
         return createLoader(maxRows, 8);
     }

@@ -45,6 +45,17 @@ public class DorisExecutionOptionsTest {
     }
 
     @Test
+    public void testArrowDoesNotEnableTransportGzipByDefault() {
+        Properties properties = new Properties();
+        properties.put("format", "arrow");
+
+        DorisExecutionOptions executionOptions =
+                DorisExecutionOptions.builder().setStreamLoadProp(properties).build();
+
+        Assert.assertFalse(executionOptions.getStreamLoadProp().containsKey("compress_type"));
+    }
+
+    @Test
     public void testEquals() {
         DorisExecutionOptions exceptOptions =
                 DorisExecutionOptions.builder()

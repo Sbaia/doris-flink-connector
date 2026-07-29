@@ -159,9 +159,15 @@ public class DorisBatchWriter<IN> {
     /** Writes a pre-serialized payload containing one or more logical Doris rows. */
     public void writeOneDorisRecord(DorisRecord record, long logicalRowCount)
             throws InterruptedException {
+        writeOneDorisRecordAndGetBufferedBytes(record, logicalRowCount);
+    }
+
+    /** Writes a pre-serialized payload and returns the exact bytes retained by the load buffer. */
+    public int writeOneDorisRecordAndGetBufferedBytes(DorisRecord record, long logicalRowCount)
+            throws InterruptedException {
         if (record == null || record.getRow() == null) {
             // ddl or value is null
-            return;
+            return 0;
         }
         String db = this.database;
         String tbl = this.table;
@@ -170,7 +176,8 @@ public class DorisBatchWriter<IN> {
             db = record.getDatabase();
             tbl = record.getTable();
         }
-        batchStreamLoad.writeRecord(db, tbl, record.getRow(), logicalRowCount);
+        return batchStreamLoad.writeRecordAndGetBufferedBytes(
+                db, tbl, record.getRow(), logicalRowCount);
     }
 
     public void close() throws Exception {

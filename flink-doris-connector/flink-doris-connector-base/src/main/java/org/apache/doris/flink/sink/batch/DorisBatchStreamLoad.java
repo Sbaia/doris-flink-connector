@@ -204,6 +204,15 @@ public class DorisBatchStreamLoad implements Serializable {
 
     /** Writes one physical payload that represents {@code logicalRowCount} Doris rows. */
     public void writeRecord(String database, String table, byte[] record, long logicalRowCount) {
+        writeRecordAndGetBufferedBytes(database, table, record, logicalRowCount);
+    }
+
+    /**
+     * Writes one physical payload and returns the exact bytes retained by the table buffer. The
+     * returned value includes a record delimiter when this is not the buffer's first payload.
+     */
+    public int writeRecordAndGetBufferedBytes(
+            String database, String table, byte[] record, long logicalRowCount) {
         if (logicalRowCount <= 0) {
             throw new IllegalArgumentException("Logical row count must be positive");
         }
@@ -260,6 +269,7 @@ public class DorisBatchStreamLoad implements Serializable {
                 lock.unlock();
             }
         }
+        return bytes;
     }
 
     public boolean bufferFullFlush(String bufferKey) {
