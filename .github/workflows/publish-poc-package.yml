@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - observable-flush-26.0.0-poc.1
+      - observable-flush-26.0.0-poc.1-build.*
 
 permissions:
   contents: read
@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Check out the immutable source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Verify source provenance
         shell: bash

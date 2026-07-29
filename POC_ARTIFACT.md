@@ -8,7 +8,7 @@ The version is pinned to this provenance chain:
 - Flink 2 and JDK 21 patch: `c73add2959560899f92c2e3906d20cbc5d3282ae`
 - Observable flush and visibility patches through: `e04ea44015a61e88baabc7b90645ae900cdb67ca`
 
-The `publish-poc-package.yml` workflow runs for the immutable `observable-flush-26.0.0-poc.1` tag, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes the reactor with the repository-scoped `GITHUB_TOKEN`, resolves it from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
+The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.1-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes the reactor with the repository-scoped `GITHUB_TOKEN`, resolves it from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
 
 Consumers authenticate Maven server `github` using environment-backed credentials. For example, CI may map `GITHUB_ACTOR` and a read-only package token through Maven `settings.xml`; credentials must never be written to a project POM or committed settings file.
 
