@@ -1,0 +1,22 @@
+.github/poc-consumer/pom.xml
+  s_8e35ce17f6a1a5::t_2205b3e070acc0 29
+.github/workflows/publish-poc-package.yml
+  s_8e35ce17f6a1a5::t_58fe828bed4f5c 48
+  s_8e35ce17f6a1a5::t_2205b3e070acc0 24,31,37,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3633810b0c9455de6b15c296fb78394040c20a39",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
