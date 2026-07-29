@@ -259,6 +259,36 @@ public class DorisBatchStreamLoadFlushResultTest {
         }
     }
 
+    @Test
+    public void completionTrackingAppliesBackpressureUntilDrain() throws Exception {
+        loader = createLoader(10_000, 1);
+        configureSuccessfulHttpClient(loader);
+
+        loader.writeRecord("db", "first", "one".getBytes(StandardCharsets.UTF_8));
+        Assert.assertTrue(loader.bufferFullFlush("db.first"));
+        TestUtil.waitUntilCondition(
+                () -> loader.getTrackedCompletionCount() == 1,
+                Deadline.fromNow(Duration.ofSeconds(5)),
+                10L,
+                "first completion was not retained");
+
+        loader.writeRecord("db", "second", "two".getBytes(StandardCharsets.UTF_8));
+        Assert.assertTrue(loader.bufferFullFlush("db.second"));
+        Thread.sleep(100L);
+        Assert.assertEquals(
+                "completion retention exceeded queue capacity",
+                1,
+                loader.getTrackedCompletionCount());
+
+        loader.writeRecord("db", "third", "three".getBytes(StandardCharsets.UTF_8));
+        Assert.assertTrue(loader.bufferFullFlush("db.third"));
+        BatchFlushResult result = loader.flushAndWait();
+
+        Assert.assertEquals(3L, result.getThroughSequenceInclusive());
+        Assert.assertEquals(3, result.getLoadResults().size());
+        Assert.assertEquals(0, loader.getTrackedCompletionCount());
+    }
+
     private DorisBatchStreamLoad createLoader(int maxRows) throws Exception {
         return createLoader(maxRows, 8);
     }

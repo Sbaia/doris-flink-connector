@@ -116,7 +116,7 @@ public class DorisBatchStreamLoad implements Serializable {
     private final Condition block = lock.newCondition();
     private final Map<String, ReadWriteLock> bufferMapLock = new ConcurrentHashMap<>();
     private final AtomicLong nextLoadSequence = new AtomicLong(0L);
-    private final BatchFlushResultTracker flushResultTracker = new BatchFlushResultTracker();
+    private final BatchFlushResultTracker flushResultTracker;
     private long lastDrainedSequence;
 
     public DorisBatchStreamLoad(
@@ -152,6 +152,7 @@ public class DorisBatchStreamLoad implements Serializable {
         this.enableGzCompress = loadProps.getProperty(COMPRESS_TYPE, "").equals(COMPRESS_TYPE_GZ);
         this.executionOptions = executionOptions;
         this.flushQueue = new LinkedBlockingDeque<>(executionOptions.getFlushQueueSize());
+        this.flushResultTracker = new BatchFlushResultTracker(executionOptions.getFlushQueueSize());
         // maxBlockedBytes ensures that a buffer can be written even if the queue is full
         this.maxBlockedBytes =
                 (long) executionOptions.getBufferFlushMaxBytes()
@@ -263,15 +264,20 @@ public class DorisBatchStreamLoad implements Serializable {
     /** Flushes all current buffers and returns the next non-overlapping completed load epoch. */
     public synchronized BatchFlushResult flushAndWait() throws InterruptedException {
         checkFlushException();
-        flush(null, true);
-        long throughSequence = nextLoadSequence.get();
-        if (throughSequence == lastDrainedSequence) {
-            return BatchFlushResult.empty(lastDrainedSequence);
+        flushResultTracker.beginDrain();
+        try {
+            flush(null, true);
+            long throughSequence = nextLoadSequence.get();
+            if (throughSequence == lastDrainedSequence) {
+                return BatchFlushResult.empty(lastDrainedSequence);
+            }
+            BatchFlushResult result =
+                    flushResultTracker.awaitAndDrain(lastDrainedSequence, throughSequence);
+            lastDrainedSequence = throughSequence;
+            return result;
+        } finally {
+            flushResultTracker.endDrain();
         }
-        BatchFlushResult result =
-                flushResultTracker.awaitAndDrain(lastDrainedSequence, throughSequence);
-        lastDrainedSequence = throughSequence;
-        return result;
     }
 
     private synchronized boolean doFlush(
@@ -657,12 +663,21 @@ public class DorisBatchStreamLoad implements Serializable {
         private final Lock trackerLock = new ReentrantLock();
         private final Condition completed = trackerLock.newCondition();
         private final List<BatchLoadResult> retainedResults = new ArrayList<>();
+        private final int capacity;
         private long completedThrough;
         private Throwable failure;
+        private boolean drainActive;
 
-        void complete(BatchLoadResult result) {
-            trackerLock.lock();
+        private BatchFlushResultTracker(int capacity) {
+            this.capacity = Math.max(1, capacity);
+        }
+
+        void complete(BatchLoadResult result) throws InterruptedException {
+            trackerLock.lockInterruptibly();
             try {
+                while (retainedResults.size() >= capacity && !drainActive && failure == null) {
+                    completed.await();
+                }
                 if (failure != null) {
                     return;
                 }
@@ -678,6 +693,25 @@ public class DorisBatchStreamLoad implements Serializable {
                 retainedResults.add(result);
                 completedThrough = result.getLastSequence();
                 completed.signalAll();
+            } finally {
+                trackerLock.unlock();
+            }
+        }
+
+        void beginDrain() {
+            trackerLock.lock();
+            try {
+                drainActive = true;
+                completed.signalAll();
+            } finally {
+                trackerLock.unlock();
+            }
+        }
+
+        void endDrain() {
+            trackerLock.lock();
+            try {
+                drainActive = false;
             } finally {
                 trackerLock.unlock();
             }
@@ -704,6 +738,7 @@ public class DorisBatchStreamLoad implements Serializable {
                         iterator.remove();
                     }
                 }
+                completed.signalAll();
                 return BatchFlushResult.completed(fromExclusive, throughInclusive, epoch);
             } finally {
                 trackerLock.unlock();
