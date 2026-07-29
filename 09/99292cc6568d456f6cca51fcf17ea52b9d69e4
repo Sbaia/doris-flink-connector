@@ -1,0 +1,21 @@
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/writer/serializer/RowDataSerializerCompatibilityTest.java
+  s_8e35ce17f6a1a5::t_07806983270078 27,37-43
+  s_8e35ce17f6a1a5::t_9c9d6d9edb2572 46-53
+  s_8e35ce17f6a1a5::t_d61823837f1b9d 44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "0999292cc6568d456f6cca51fcf17ea52b9d69e4",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
