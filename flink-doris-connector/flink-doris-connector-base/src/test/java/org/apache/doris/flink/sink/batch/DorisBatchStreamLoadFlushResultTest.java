@@ -97,6 +97,28 @@ public class DorisBatchStreamLoadFlushResultTest {
     }
 
     @Test
+    public void preBatchedPayloadReportsLogicalRowsInsteadOfPhysicalPayloadCount()
+            throws Exception {
+        loader = createLoader(10_000);
+        configureHttpClient(
+                loader, ignored -> HttpTestUtil.getResponse(successfulResponse(7L), true));
+
+        loader.writeRecord("db", "tbl", "one-arrow-payload".getBytes(StandardCharsets.UTF_8), 7L);
+        BatchFlushResult result = loader.flushAndWait();
+
+        Assert.assertEquals(7L, result.getSubmittedRows());
+        Assert.assertEquals(7L, result.getTotalRows());
+        Assert.assertEquals(7L, result.getLoadedRows());
+        Assert.assertEquals(1, result.getLoadResults().size());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void logicalRowCountMustBePositive() throws Exception {
+        loader = createLoader(10_000);
+        loader.writeRecord("db", "tbl", new byte[] {1}, 0L);
+    }
+
+    @Test
     public void flushAndWaitReturnsIndependentConsecutiveEpochs() throws Exception {
         loader = createLoader(10_000);
         configureSuccessfulHttpClient(loader);

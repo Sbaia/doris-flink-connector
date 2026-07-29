@@ -153,6 +153,12 @@ public class DorisBatchWriter<IN> {
     }
 
     public void writeOneDorisRecord(DorisRecord record) throws InterruptedException {
+        writeOneDorisRecord(record, 1L);
+    }
+
+    /** Writes a pre-serialized payload containing one or more logical Doris rows. */
+    public void writeOneDorisRecord(DorisRecord record, long logicalRowCount)
+            throws InterruptedException {
         if (record == null || record.getRow() == null) {
             // ddl or value is null
             return;
@@ -164,7 +170,7 @@ public class DorisBatchWriter<IN> {
             db = record.getDatabase();
             tbl = record.getTable();
         }
-        batchStreamLoad.writeRecord(db, tbl, record.getRow());
+        batchStreamLoad.writeRecord(db, tbl, record.getRow(), logicalRowCount);
     }
 
     public void close() throws Exception {

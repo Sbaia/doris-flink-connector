@@ -275,11 +275,11 @@ public class TestDorisBatchStreamLoad {
         List<BatchRecordBuffer> bufferList = new ArrayList<>();
         BatchRecordBuffer recordBuffer =
                 new BatchRecordBuffer("db", "tbl", "\n".getBytes(StandardCharsets.UTF_8), 0);
-        recordBuffer.insert("doris,2".getBytes(StandardCharsets.UTF_8));
+        recordBuffer.insert("doris,2".getBytes(StandardCharsets.UTF_8), 3L);
         recordBuffer.setLabelName("label2");
         BatchRecordBuffer buffer =
                 new BatchRecordBuffer("db", "tbl", "\n".getBytes(StandardCharsets.UTF_8), 0);
-        buffer.insert("doris,1".getBytes(StandardCharsets.UTF_8));
+        buffer.insert("doris,1".getBytes(StandardCharsets.UTF_8), 2L);
         buffer.setLabelName("label1");
 
         boolean flag = loader.mergeBuffer(bufferList, buffer);
@@ -291,6 +291,7 @@ public class TestDorisBatchStreamLoad {
         Assert.assertEquals(true, flag);
         byte[] bytes = mergeByteArrays(buffer.getBuffer());
         Assert.assertArrayEquals(bytes, "doris,1\ndoris,2".getBytes(StandardCharsets.UTF_8));
+        Assert.assertEquals(5L, buffer.getNumOfLogicalRows());
 
         // multi table
         bufferList.clear();

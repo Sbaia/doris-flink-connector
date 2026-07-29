@@ -30,6 +30,7 @@ public class BatchRecordBuffer {
     private LinkedList<byte[]> buffer;
     private byte[] lineDelimiter;
     private int numOfRecords = 0;
+    private long numOfLogicalRows = 0;
     private long bufferSizeBytes = 0;
     private boolean loadBatchFirstRecord = true;
     private String database;
@@ -53,6 +54,14 @@ public class BatchRecordBuffer {
     }
 
     public int insert(byte[] record) {
+        return insert(record, 1L);
+    }
+
+    /** Inserts one physical payload containing the supplied number of logical Doris rows. */
+    public int insert(byte[] record, long logicalRowCount) {
+        if (logicalRowCount <= 0) {
+            throw new IllegalArgumentException("Logical row count must be positive");
+        }
         int recordSize = record.length;
         if (loadBatchFirstRecord) {
             loadBatchFirstRecord = false;
@@ -63,6 +72,7 @@ public class BatchRecordBuffer {
         }
         this.buffer.add(record);
         setNumOfRecords(this.numOfRecords + 1);
+        this.numOfLogicalRows = Math.addExact(this.numOfLogicalRows, logicalRowCount);
         setBufferSizeBytes(this.bufferSizeBytes + record.length);
         return recordSize;
     }
@@ -85,6 +95,7 @@ public class BatchRecordBuffer {
     public void clear() {
         this.buffer.clear();
         this.numOfRecords = 0;
+        this.numOfLogicalRows = 0;
         this.bufferSizeBytes = 0;
         this.labelName = null;
         this.loadBatchFirstRecord = true;
@@ -101,6 +112,17 @@ public class BatchRecordBuffer {
      */
     public int getNumOfRecords() {
         return numOfRecords;
+    }
+
+    public long getNumOfLogicalRows() {
+        return numOfLogicalRows;
+    }
+
+    public void addLogicalRows(long logicalRows) {
+        if (logicalRows < 0) {
+            throw new IllegalArgumentException("Logical row count must not be negative");
+        }
+        numOfLogicalRows = Math.addExact(numOfLogicalRows, logicalRows);
     }
 
     /**

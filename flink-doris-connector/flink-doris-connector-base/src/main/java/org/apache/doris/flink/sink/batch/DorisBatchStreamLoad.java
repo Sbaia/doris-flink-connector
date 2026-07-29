@@ -199,6 +199,14 @@ public class DorisBatchStreamLoad implements Serializable {
      * @throws IOException
      */
     public void writeRecord(String database, String table, byte[] record) {
+        writeRecord(database, table, record, 1L);
+    }
+
+    /** Writes one physical payload that represents {@code logicalRowCount} Doris rows. */
+    public void writeRecord(String database, String table, byte[] record, long logicalRowCount) {
+        if (logicalRowCount <= 0) {
+            throw new IllegalArgumentException("Logical row count must be positive");
+        }
         checkFlushException();
         String bufferKey = getTableIdentifier(database, table);
 
@@ -215,7 +223,7 @@ public class DorisBatchStreamLoad implements Serializable {
                                             table,
                                             this.lineDelimiter,
                                             executionOptions.getBufferFlushIntervalMs()));
-            bytes = buffer.insert(record);
+            bytes = buffer.insert(record, logicalRowCount);
             currentCacheBytes.addAndGet(bytes);
         } finally {
             getLock(bufferKey).writeLock().unlock();
@@ -223,11 +231,12 @@ public class DorisBatchStreamLoad implements Serializable {
 
         if (flushQueue.size() < executionOptions.getFlushQueueSize()
                 && (buffer.getBufferSizeBytes() >= executionOptions.getBufferFlushMaxBytes()
-                        || buffer.getNumOfRecords() >= executionOptions.getBufferFlushMaxRows())) {
+                        || buffer.getNumOfLogicalRows()
+                                >= executionOptions.getBufferFlushMaxRows())) {
             boolean flush = bufferFullFlush(bufferKey);
             LOG.info("trigger flush by buffer full, flush: {}", flush);
         } else if (buffer.getBufferSizeBytes() >= STREAM_LOAD_MAX_BYTES
-                || buffer.getNumOfRecords() >= STREAM_LOAD_MAX_ROWS) {
+                || buffer.getNumOfLogicalRows() >= STREAM_LOAD_MAX_ROWS) {
             // The buffer capacity exceeds the stream load limit, flush
             boolean flush = bufferFullFlush(bufferKey);
             LOG.info("trigger flush by buffer exceeding the limit, flush: {}", flush);
@@ -446,6 +455,7 @@ public class DorisBatchStreamLoad implements Serializable {
         }
         mergeBuffer.getBuffer().addAll(buffer.getBuffer());
         mergeBuffer.setNumOfRecords(mergeBuffer.getNumOfRecords() + buffer.getNumOfRecords());
+        mergeBuffer.addLogicalRows(buffer.getNumOfLogicalRows());
         mergeBuffer.setBufferSizeBytes(
                 mergeBuffer.getBufferSizeBytes() + buffer.getBufferSizeBytes());
         mergeBuffer.includeSequenceRange(buffer);
@@ -671,7 +681,7 @@ public class DorisBatchStreamLoad implements Serializable {
                 buffer.getLastSequence(),
                 buffer.getDatabase(),
                 buffer.getTable(),
-                buffer.getNumOfRecords(),
+                buffer.getNumOfLogicalRows(),
                 buffer.getBufferSizeBytes(),
                 response);
     }
