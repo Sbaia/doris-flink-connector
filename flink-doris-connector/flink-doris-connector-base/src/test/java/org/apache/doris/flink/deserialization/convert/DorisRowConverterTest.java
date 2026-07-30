@@ -423,4 +423,24 @@ public class DorisRowConverterTest implements Serializable {
                 "[[1, 2, 3], [[1, 2, 3], [4, 5, 6]], [{\"l1\":\"on\",\"l2\":\"1\"}, {\"l1\":\"off\",\"l2\":\"2\"}], [{\"hello\":\"1\"}, {\"world\":\"2\"}], [1970-01-02, 1970-01-03, 1970-01-04]]";
         Assert.assertEquals(expected, row.toString());
     }
+
+    @Test
+    public void testNestedRowExternalConvertPreservesNullMembers() {
+        ResolvedSchema schema =
+                ResolvedSchema.of(
+                        Column.physical(
+                                "nested",
+                                DataTypes.ROW(
+                                        DataTypes.FIELD("present", DataTypes.STRING()),
+                                        DataTypes.FIELD("missing", DataTypes.INT()))));
+        DorisRowConverter converter =
+                new DorisRowConverter((RowType) schema.toPhysicalRowDataType().getLogicalType());
+        GenericRowData rowData =
+                GenericRowData.of(GenericRowData.of(StringData.fromString("value"), null));
+
+        String converted = (String) converter.convertExternal(rowData, 0);
+
+        Assert.assertTrue(converted.contains("\"present\":\"value\""));
+        Assert.assertTrue(converted.contains("\"missing\":null"));
+    }
 }
