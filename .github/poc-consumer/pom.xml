@@ -26,7 +26,7 @@ under the License.
     <version>1.0.0</version>
 
     <properties>
-        <doris.connector.version>26.0.0-poc.10</doris.connector.version>
+        <doris.connector.version>26.0.0-poc.11</doris.connector.version>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
