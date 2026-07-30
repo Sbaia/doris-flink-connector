@@ -19,7 +19,7 @@ under the License.
 
 # Observable synchronous flush POC artifact
 
-This fork prepares `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.11` for publication to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing. The most recently published artifact remains `26.0.0-poc.10` until the immutable `poc.11` tag workflow completes.
+This fork publishes `org.apache.doris:flink-doris-connector-2.1:26.0.0-poc.11` to the personal `Sbaia/doris-flink-connector` GitHub Packages registry for integration testing.
 
 The version is pinned to this provenance chain:
 
@@ -33,6 +33,7 @@ The version is pinned to this provenance chain:
 - Flink 1/Java 8 and Flink 2 profile isolation: `f17d0fe7`, `0cf42f9e`
 - Nullable nested `ROW` serialization: `bc03c63`
 - Prepared `poc.11` publication source: `5346f17`
+- Immutable `poc.11` publication source: `79f48331479794ba764b3c2230791457248d8169`
 
 The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.11-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
 
@@ -44,12 +45,14 @@ This personal package is POC-only. It is not approved for shared or production d
 
 The workflow, consumer fixture, and `poc-release` Maven profile are release-only fork changes. Generic connector changes remain in earlier separate commits so they can be proposed upstream without GitHub Packages configuration.
 
-## Prepared `poc.11` evidence
+## Published `poc.11` evidence
 
-- Source commits: `bc03c63`, `5346f17`
+- Source commit: `79f48331479794ba764b3c2230791457248d8169`
+- Immutable build tag: `observable-flush-26.0.0-poc.11-build.1`
+- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30581069854`
+- Connector JAR SHA-256: `33a4c129cd8b383c03289f1d0413be2f53839b136744609c4882f543a7ea3b38`
 - Local connector suites: 325 base tests and 13 Flink 2 tests passed
-- Local Maven installation and pipeline shaded-JAR packaging: passed
-- Remote tag, workflow run and immutable checksum: pending publication
+- Clean-cache resolution, Maven dependency convergence and published checksum comparison: passed
 
 ## Most recent published evidence (`poc.10`)
 
