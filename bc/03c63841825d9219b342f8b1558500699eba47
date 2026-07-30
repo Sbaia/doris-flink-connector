@@ -1,0 +1,22 @@
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/deserialization/convert/DorisRowConverterTest.java
+  s_8e35ce17f6a1a5::t_d979af10504bda 426-438,440-445
+  s_8e35ce17f6a1a5::t_892db6794979ef 439
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/deserialization/converter/DorisRowConverter.java
+  s_8e35ce17f6a1a5::t_b94b0cb6401ec0 434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.17",
+  "base_commit_sha": "bc03c63841825d9219b342f8b1558500699eba47",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
