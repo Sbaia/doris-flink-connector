@@ -26,10 +26,10 @@ stack. The downstream branch is an integration and artifact-publication branch; 
 opened as one monolithic upstream pull request.
 
 - Upstream baseline: `apache/doris-flink-connector@825b7bbe9647d54398eed91870219f322c617967`
-- Downstream proof head: `Sbaia/doris-flink-connector@3633810b0c9455de6b15c296fb78394040c20a39`
+- Downstream proof head: `Sbaia/doris-flink-connector@14c2494fe0277b13c5750626b4ba1ec7d51eea21`
 - Existing Flink 2/JDK 21 prerequisite: `c73add2959560899f92c2e3906d20cbc5d3282ae`
-- Proven personal artifact: `26.0.0-poc.10`, development-only
-- Artifact SHA-256: `c0cba961bc291bcd733ef18ebdbd2d062c288fdcf19a95f598ac4fc766819632`
+- Proven personal artifact: `26.0.0-poc.11`, development-only
+- Artifact SHA-256: `33a4c129cd8b383c03289f1d0413be2f53839b136744609c4882f543a7ea3b38`
 
 Retarget each contribution onto the current upstream head immediately before submission. Keep the
 JDK 21 prerequisite separate: if it has not landed, base the stack on that open contribution rather
@@ -122,6 +122,21 @@ actionable error instead of failing later with a linkage error.
 - Packaging test: run a clean external consumer against the packaged Flink 2 JAR and execute a real
   ZSTD round trip. The `.github/poc-consumer` fixture may be adapted for upstream CI, but personal
   package coordinates and publication workflow must not be copied.
+
+### 6. Bound cross-table Stream Load concurrency
+
+**Intent:** Allow independent table loads to progress concurrently without losing FIFO ordering for
+the same table. Concurrency is explicit, bounded, and defaults to one so existing users retain the
+serial behavior unless they opt in.
+
+- Main implementation: `TableLoadDispatcher`, `DorisBatchStreamLoad`, and the additive
+  `loadConcurrency` execution option.
+- Compatibility: the default remains one; validation rejects values outside 1-64; flush result
+  sequencing remains deterministic even when different tables complete out of order.
+- Source provenance: `14c24941`.
+- Focused tests: `TableLoadDispatcherTest`, `DorisBatchStreamLoadFlushResultTest`, and
+  `DorisExecutionOptionsTest`; bounded parallelism, per-table FIFO, cross-table overlap, failure
+  propagation, close behavior and ordered flush epochs.
 
 ## Downstream-only changes
 
