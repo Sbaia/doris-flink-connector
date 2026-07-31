@@ -1,0 +1,21 @@
+POC_ARTIFACT.md
+  s_8e35ce17f6a1a5::t_7d943ca9b611ce 57,66
+  s_8e35ce17f6a1a5::t_70236aaaec1597 36,48-55
+  s_8e35ce17f6a1a5::t_5392eb98ae9e0c 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "733656934c46589b5b90b6477381ff3483626fd2",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
