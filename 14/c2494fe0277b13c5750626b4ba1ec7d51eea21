@@ -1,0 +1,37 @@
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoadFlushResultTest.java
+  s_8e35ce17f6a1a5::t_b8569ea19faa0e 44-45,330-379,434-439
+  s_8e35ce17f6a1a5::t_672aa2881a35c0 263-267,269-270,279
+  s_8e35ce17f6a1a5::t_89149fe027583e 329,446
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/cfg/DorisExecutionOptionsTest.java
+  s_8e35ce17f6a1a5::t_78275af4131702 195-212
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/TableLoadDispatcherTest.java
+  s_8e35ce17f6a1a5::t_672aa2881a35c0 45,66-70,136
+  s_8e35ce17f6a1a5::t_78275af4131702 1-44,46-65,71-135,137-142
+  s_8e35ce17f6a1a5::t_125bb86cb863a3 143
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoad.java
+  s_8e35ce17f6a1a5::t_ee0b5bb9e9a110 553
+  s_8e35ce17f6a1a5::t_64c10fc3756a89 53,103,164-168,180-182,414,514,525,532,542,554-566,572-575,680-686,705-714,716-718,749,762,768-770,773,777-783,851,858,863-865
+  s_8e35ce17f6a1a5::t_672aa2881a35c0 530
+  s_8e35ce17f6a1a5::t_e09d610f85a4c5 866
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/cfg/DorisExecutionOptions.java
+  s_8e35ce17f6a1a5::t_2707d34c658b4f 51-52,79,147-194,200-203,227,347-350,376,407-408,439,453-458,728-729
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/TableLoadDispatcher.java
+  s_8e35ce17f6a1a5::t_672aa2881a35c0 27,45,52,72,75,78,81-99,101-105
+  s_8e35ce17f6a1a5::t_2707d34c658b4f 1-26,28-44,46-51,53-71,73-74,76-77,79-80,100,106-141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "14c2494fe0277b13c5750626b4ba1ec7d51eea21",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
