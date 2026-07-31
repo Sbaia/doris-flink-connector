@@ -1,0 +1,38 @@
+.github/workflows/publish-poc-package.yml
+  s_8e35ce17f6a1a5::t_cdb33a2b6946f4 49
+  s_8e35ce17f6a1a5::t_eb926984658101 24,31,37,77
+POC_ARTIFACT.md
+  s_8e35ce17f6a1a5::t_9d189a4f344949 35
+  s_8e35ce17f6a1a5::t_eb926984658101 22,37,39,47,56
+.github/poc-consumer/pom.xml
+  s_8e35ce17f6a1a5::t_eb926984658101 29
+UPSTREAM_CONTRIBUTION_PLAN.md
+  s_8e35ce17f6a1a5::t_eb926984658101 31-32,126-135,137-139
+  s_8e35ce17f6a1a5::t_9d189a4f344949 136
+  s_8e35ce17f6a1a5::t_cdb33a2b6946f4 29
+  s_7cf96d195d2196::t_3a9cd2da7206de 140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "fd22cd014c4126ae314d5dbbd9017bd3328eed6d",
+  "prompts": {},
+  "sessions": {
+    "s_7cf96d195d2196": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f8160-70ca-73a3-83a1-16c05201b3f3",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    },
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
