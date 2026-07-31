@@ -21,20 +21,20 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - observable-flush-26.0.0-poc.12-build.*
+      - observable-flush-26.0.0-poc.13-build.*
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: publish-observable-flush-26.0.0-poc.12
+  group: publish-observable-flush-26.0.0-poc.13
   cancel-in-progress: false
 
 env:
   FLINK_VERSION: 2.1.2
   FLINK_MAJOR_VERSION: "2.1"
-  POC_VERSION: 26.0.0-poc.12
+  POC_VERSION: 26.0.0-poc.13
   UPSTREAM_BASE_COMMIT: 825b7bbe9647d54398eed91870219f322c617967
   JDK21_PATCH_COMMIT: c73add2959560899f92c2e3906d20cbc5d3282ae
   OBSERVABLE_FLUSH_PATCH_COMMIT: e04ea44015a61e88baabc7b90645ae900cdb67ca
@@ -47,6 +47,7 @@ env:
   ZSTD_JNI_PATCH_COMMIT: 9eadc506372a0318816611b85f19737962081e12
   PROFILE_COMPATIBILITY_PATCH_COMMIT: 0cf42f9e78fa33e48f5e7c1da80eaf8fcebf9440
   CONCURRENT_TABLE_LOAD_PATCH_COMMIT: 14c2494fe0277b13c5750626b4ba1ec7d51eea21
+  BOUNDED_FLUSH_WAIT_PATCH_COMMIT: 0a5501899ea501978763dcef9cd28b44e261164f
   PACKAGE_REPOSITORY: https://maven.pkg.github.com/Sbaia/doris-flink-connector
 
 jobs:
@@ -75,6 +76,7 @@ jobs:
           git merge-base --is-ancestor "${ZSTD_JNI_PATCH_COMMIT}" HEAD
           git merge-base --is-ancestor "${PROFILE_COMPATIBILITY_PATCH_COMMIT}" HEAD
           git merge-base --is-ancestor "${CONCURRENT_TABLE_LOAD_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${BOUNDED_FLUSH_WAIT_PATCH_COMMIT}" HEAD
           git diff --check "${UPSTREAM_BASE_COMMIT}" HEAD
 
       - name: Set up JDK 21 and Maven package credentials
