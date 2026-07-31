@@ -33,6 +33,7 @@ The version is pinned to this provenance chain:
 - Flink 1/Java 8 and Flink 2 profile isolation: `f17d0fe7`, `0cf42f9e`
 - Nullable nested `ROW` serialization: `bc03c63`
 - Bounded cross-table Stream Load concurrency with per-table ordering: `14c24941`
+- Immutable `poc.12` publication source: `fd22cd014c4126ae314d5dbbd9017bd3328eed6d`
 
 The `publish-poc-package.yml` workflow runs for immutable `observable-flush-26.0.0-poc.12-build.*` tags, and can also be manually dispatched after the workflow reaches the default branch. It builds with JDK 21, runs the connector tests, publishes flattened consumer POMs with the repository-scoped `GITHUB_TOKEN`, resolves the connector from an empty Maven cache, enforces dependency convergence, and compares the downloaded JAR SHA-256 with the locally built artifact. No personal access token is stored in this repository or in the pipeline repository.
 
@@ -44,7 +45,16 @@ This personal package is POC-only. It is not approved for shared or production d
 
 The workflow, consumer fixture, and `poc-release` Maven profile are release-only fork changes. Generic connector changes remain in earlier separate commits so they can be proposed upstream without GitHub Packages configuration.
 
-## Most recent published evidence (`poc.11`)
+## Published `poc.12` evidence
+
+- Source commit: `fd22cd014c4126ae314d5dbbd9017bd3328eed6d`
+- Immutable build tag: `observable-flush-26.0.0-poc.12-build.1`
+- GitHub Actions run: `https://github.com/Sbaia/doris-flink-connector/actions/runs/30629787692`
+- Connector JAR SHA-256: `b4f5c4483715376e3034a764e01dc1152ee941885f659089f55b056774ff4125`
+- Local connector-base suites: 333 tests under Flink 2.1 and 333 under Flink 1.20 (1 skipped in each)
+- Clean-cache resolution, Maven dependency convergence, packaged JNI probe and checksum comparison: passed
+
+## Previous published evidence (`poc.11`)
 
 - Source commit: `79f48331479794ba764b3c2230791457248d8169`
 - Immutable build tag: `observable-flush-26.0.0-poc.11-build.1`
@@ -53,7 +63,7 @@ The workflow, consumer fixture, and `poc-release` Maven profile are release-only
 - Local connector suites: 325 base tests and 13 Flink 2 tests passed
 - Clean-cache resolution, Maven dependency convergence and published checksum comparison: passed
 
-## Previous published evidence (`poc.10`)
+## Earlier published evidence (`poc.10`)
 
 - Source commit: `3633810b0c9455de6b15c296fb78394040c20a39`
 - Immutable build tag: `observable-flush-26.0.0-poc.10-build.1`
