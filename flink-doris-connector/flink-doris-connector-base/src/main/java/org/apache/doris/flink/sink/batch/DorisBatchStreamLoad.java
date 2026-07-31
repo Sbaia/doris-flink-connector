@@ -307,7 +307,10 @@ public class DorisBatchStreamLoad implements Serializable {
                 return BatchFlushResult.empty(lastDrainedSequence);
             }
             BatchFlushResult result =
-                    flushResultTracker.awaitAndDrain(lastDrainedSequence, throughSequence);
+                    flushResultTracker.awaitAndDrain(
+                            lastDrainedSequence,
+                            throughSequence,
+                            executionOptions.getLoadVisibilityTimeoutMs());
             lastDrainedSequence = throughSequence;
             return result;
         } finally {
@@ -806,12 +809,31 @@ public class DorisBatchStreamLoad implements Serializable {
             }
         }
 
-        BatchFlushResult awaitAndDrain(long fromExclusive, long throughInclusive)
+        BatchFlushResult awaitAndDrain(long fromExclusive, long throughInclusive, long timeoutMs)
                 throws InterruptedException {
             trackerLock.lockInterruptibly();
             try {
+                long remainingNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMs);
                 while (completedThrough < throughInclusive && failure == null) {
-                    completed.await();
+                    if (remainingNanos <= 0L) {
+                        DorisBatchLoadException timeout =
+                                new DorisBatchLoadException(
+                                        "Timed out waiting for Stream Load completion after "
+                                                + timeoutMs
+                                                + " ms: fromExclusive="
+                                                + fromExclusive
+                                                + ", throughInclusive="
+                                                + throughInclusive
+                                                + ", completedThrough="
+                                                + completedThrough
+                                                + ", retained="
+                                                + retainedResults.size()
+                                                + ", pendingSequences="
+                                                + pendingResults.keySet());
+                        failLocked(timeout);
+                        throw timeout;
+                    }
+                    remainingNanos = completed.awaitNanos(remainingNanos);
                 }
                 if (failure != null) {
                     throw new DorisBatchLoadException(failure);

@@ -32,17 +32,20 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
 import static org.apache.doris.flink.cfg.ConfigurationOptions.DORIS_REQUEST_CONNECT_TIMEOUT_MS_DEFAULT;
+import static org.apache.doris.flink.cfg.ConfigurationOptions.DORIS_REQUEST_READ_TIMEOUT_MS_DEFAULT;
 import static org.apache.doris.flink.cfg.ConfigurationOptions.SINK_HTTP_UTF8_CHARSET_DEFAULT;
 
 /** util to build http client. */
 public class HttpUtil {
     private final int connectTimeout;
+    private final int socketTimeout;
     private final int waitForContinueTimeout;
     private final boolean httpUtf8Charset;
     private HttpClientBuilder httpClientBuilder;
 
     public HttpUtil() {
         this.connectTimeout = DORIS_REQUEST_CONNECT_TIMEOUT_MS_DEFAULT;
+        this.socketTimeout = DORIS_REQUEST_READ_TIMEOUT_MS_DEFAULT;
         this.waitForContinueTimeout = DORIS_REQUEST_CONNECT_TIMEOUT_MS_DEFAULT;
         this.httpUtf8Charset = SINK_HTTP_UTF8_CHARSET_DEFAULT;
         settingStreamHttpClientBuilder();
@@ -50,6 +53,7 @@ public class HttpUtil {
 
     public HttpUtil(DorisReadOptions readOptions, boolean httpUtf8Charset) {
         this.connectTimeout = readOptions.getRequestConnectTimeoutMs();
+        this.socketTimeout = readOptions.getRequestReadTimeoutMs();
         this.waitForContinueTimeout = readOptions.getRequestConnectTimeoutMs();
         this.httpUtf8Charset = httpUtf8Charset;
         settingStreamHttpClientBuilder();
@@ -124,9 +128,7 @@ public class HttpUtil {
                         RequestConfig.custom()
                                 .setConnectTimeout(connectTimeout)
                                 .setConnectionRequestTimeout(connectTimeout)
-                                // todo: Need to be extracted to DorisExecutionOption
-                                // default checkpoint timeout is 10min
-                                .setSocketTimeout(9 * 60 * 1000)
+                                .setSocketTimeout(socketTimeout)
                                 .build());
     }
 
@@ -137,9 +139,7 @@ public class HttpUtil {
                         RequestConfig.custom()
                                 .setConnectTimeout(connectTimeout)
                                 .setConnectionRequestTimeout(connectTimeout)
-                                // todo: Need to be extracted to DorisExecutionOption
-                                // default checkpoint timeout is 10min
-                                .setSocketTimeout(9 * 60 * 1000)
+                                .setSocketTimeout(socketTimeout)
                                 .build());
     }
 }

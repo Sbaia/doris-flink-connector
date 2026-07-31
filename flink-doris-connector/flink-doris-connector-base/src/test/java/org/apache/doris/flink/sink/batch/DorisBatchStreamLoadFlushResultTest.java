@@ -378,6 +378,37 @@ public class DorisBatchStreamLoadFlushResultTest {
     }
 
     @Test
+    public void flushAndWaitFailsWithinVisibilityTimeoutWhenLoadDoesNotComplete() throws Exception {
+        loader = createLoader(10_000, 8, new Properties(), 1, 50L);
+        CountDownLatch requestStarted = new CountDownLatch(1);
+        CountDownLatch releaseRequest = new CountDownLatch(1);
+        configureBlockingHttpClient(loader, requestStarted, releaseRequest);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            loader.writeRecord("db", "tbl", "one".getBytes(StandardCharsets.UTF_8));
+            Future<BatchFlushResult> drain = executor.submit(loader::flushAndWait);
+            Assert.assertTrue(requestStarted.await(1, TimeUnit.SECONDS));
+
+            try {
+                drain.get(1, TimeUnit.SECONDS);
+                Assert.fail("flushAndWait must not wait indefinitely");
+            } catch (ExecutionException expected) {
+                Assert.assertTrue(expected.getCause() instanceof DorisBatchLoadException);
+                Assert.assertTrue(
+                        expected.getCause()
+                                .getMessage()
+                                .contains("Timed out waiting for Stream Load"));
+                Assert.assertTrue(expected.getCause().getMessage().contains("throughInclusive=1"));
+                Assert.assertTrue(expected.getCause().getMessage().contains("completedThrough=0"));
+            }
+        } finally {
+            releaseRequest.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     public void visibleFlushRejectsAsyncGroupCommitBeforeSubmittingBufferedRows() throws Exception {
         Properties properties = new Properties();
         properties.setProperty(LoadConstants.GROUP_COMMIT, LoadConstants.GROUP_COMMIT_ASYNC_MODE);
@@ -437,6 +468,21 @@ public class DorisBatchStreamLoadFlushResultTest {
     private DorisBatchStreamLoad createLoader(
             int maxRows, int queueSize, Properties streamLoadProperties, int loadConcurrency)
             throws Exception {
+        return createLoader(
+                maxRows,
+                queueSize,
+                streamLoadProperties,
+                loadConcurrency,
+                DorisExecutionOptions.DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS);
+    }
+
+    private DorisBatchStreamLoad createLoader(
+            int maxRows,
+            int queueSize,
+            Properties streamLoadProperties,
+            int loadConcurrency,
+            long loadVisibilityTimeoutMs)
+            throws Exception {
         streamLoadProperties.putIfAbsent(LoadConstants.COMPRESS_TYPE, "none");
         DorisExecutionOptions executionOptions =
                 DorisExecutionOptions.builder()
@@ -444,6 +490,7 @@ public class DorisBatchStreamLoadFlushResultTest {
                         .setBufferFlushIntervalMs(60_000)
                         .setFlushQueueSize(queueSize)
                         .setLoadConcurrency(loadConcurrency)
+                        .setLoadVisibilityTimeoutMs(loadVisibilityTimeoutMs)
                         .setMaxRetries(0)
                         .setStreamLoadProp(streamLoadProperties)
                         .build();
