@@ -41,6 +41,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -258,7 +260,14 @@ public class DorisBatchStreamLoadFlushResultTest {
         Assert.assertTrue(requestStarted.await(5, TimeUnit.SECONDS));
         loader.writeRecord("db", "second", "two".getBytes(StandardCharsets.UTF_8));
         Assert.assertTrue(loader.bufferFullFlush("db.second"));
+        TestUtil.waitUntilCondition(
+                () -> loader.getPendingFlushCount() == 0,
+                Deadline.fromNow(Duration.ofSeconds(5)),
+                10L,
+                "coordinator did not claim the second buffer");
         loader.writeRecord("db", "third", "three".getBytes(StandardCharsets.UTF_8));
+        Assert.assertTrue(loader.bufferFullFlush("db.third"));
+        loader.writeRecord("db", "fourth", "four".getBytes(StandardCharsets.UTF_8));
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         CountDownLatch producerStarted = new CountDownLatch(1);
@@ -267,7 +276,7 @@ public class DorisBatchStreamLoadFlushResultTest {
                     executor.submit(
                             () -> {
                                 producerStarted.countDown();
-                                return loader.bufferFullFlush("db.third");
+                                return loader.bufferFullFlush("db.fourth");
                             });
             Assert.assertTrue(producerStarted.await(5, TimeUnit.SECONDS));
             Thread.sleep(100L);
@@ -315,6 +324,57 @@ public class DorisBatchStreamLoadFlushResultTest {
         Assert.assertEquals(3L, result.getThroughSequenceInclusive());
         Assert.assertEquals(3, result.getLoadResults().size());
         Assert.assertEquals(0, loader.getTrackedCompletionCount());
+    }
+
+    @Test
+    public void differentTablesLoadConcurrentlyAndCompleteOneOrderedEpoch() throws Exception {
+        loader = createLoader(10_000, 8, new Properties(), 2);
+        CountDownLatch firstRequestStarted = new CountDownLatch(1);
+        CountDownLatch secondRequestStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstRequest = new CountDownLatch(1);
+        Set<String> requestPaths = ConcurrentHashMap.newKeySet();
+        configureHttpClient(
+                loader,
+                invocation -> {
+                    HttpPut request = invocation.getArgument(0);
+                    String path = request.getURI().getPath();
+                    requestPaths.add(path);
+                    if (path.contains("/first/")) {
+                        firstRequestStarted.countDown();
+                        if (!releaseFirstRequest.await(5, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("test did not release first request");
+                        }
+                    } else if (path.contains("/second/")) {
+                        secondRequestStarted.countDown();
+                    }
+                    return HttpTestUtil.getResponse(successfulResponse(1L), true);
+                });
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            loader.writeRecord("db", "first", "one".getBytes(StandardCharsets.UTF_8));
+            Assert.assertTrue(loader.bufferFullFlush("db.first"));
+            Assert.assertTrue(firstRequestStarted.await(5, TimeUnit.SECONDS));
+
+            loader.writeRecord("db", "second", "two".getBytes(StandardCharsets.UTF_8));
+            Assert.assertTrue(loader.bufferFullFlush("db.second"));
+            Assert.assertTrue(
+                    "second table was serialized behind the first",
+                    secondRequestStarted.await(5, TimeUnit.SECONDS));
+
+            Future<BatchFlushResult> drain = executor.submit(loader::flushAndWait);
+            releaseFirstRequest.countDown();
+            BatchFlushResult result = drain.get(5, TimeUnit.SECONDS);
+
+            Assert.assertEquals(2, result.getLoadResults().size());
+            Assert.assertEquals(1L, result.getLoadResults().get(0).getFirstSequence());
+            Assert.assertEquals(2L, result.getLoadResults().get(1).getFirstSequence());
+            Assert.assertTrue(requestPaths.stream().anyMatch(path -> path.contains("/db/first/")));
+            Assert.assertTrue(requestPaths.stream().anyMatch(path -> path.contains("/db/second/")));
+        } finally {
+            releaseFirstRequest.countDown();
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -371,12 +431,19 @@ public class DorisBatchStreamLoadFlushResultTest {
 
     private DorisBatchStreamLoad createLoader(
             int maxRows, int queueSize, Properties streamLoadProperties) throws Exception {
+        return createLoader(maxRows, queueSize, streamLoadProperties, 1);
+    }
+
+    private DorisBatchStreamLoad createLoader(
+            int maxRows, int queueSize, Properties streamLoadProperties, int loadConcurrency)
+            throws Exception {
         streamLoadProperties.putIfAbsent(LoadConstants.COMPRESS_TYPE, "none");
         DorisExecutionOptions executionOptions =
                 DorisExecutionOptions.builder()
                         .setBufferFlushMaxRows(maxRows)
                         .setBufferFlushIntervalMs(60_000)
                         .setFlushQueueSize(queueSize)
+                        .setLoadConcurrency(loadConcurrency)
                         .setMaxRetries(0)
                         .setStreamLoadProp(streamLoadProperties)
                         .build();

@@ -192,4 +192,22 @@ public class DorisExecutionOptionsTest {
     public void testVisibleLoadPollingConfigurationMustBePositive() {
         DorisExecutionOptions.builder().setLoadVisibilityTimeoutMs(0L).build();
     }
+
+    @Test
+    public void testLoadConcurrencyDefaultsToOneAndCanBeConfigured() {
+        Assert.assertEquals(1, DorisExecutionOptions.builder().build().getLoadConcurrency());
+        Assert.assertEquals(
+                4,
+                DorisExecutionOptions.builder().setLoadConcurrency(4).build().getLoadConcurrency());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testLoadConcurrencyMustBePositive() {
+        DorisExecutionOptions.builder().setLoadConcurrency(0).build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testLoadConcurrencyHasASafeUpperBound() {
+        DorisExecutionOptions.builder().setLoadConcurrency(65).build();
+    }
 }
