@@ -1,0 +1,27 @@
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/HttpUtilTest.java
+  s_8e35ce17f6a1a5::t_d33f5f52f85bb1 1-51
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/HttpUtil.java
+  s_8e35ce17f6a1a5::t_2d9b7c1d1dc186 35,41,48,56,131,142
+flink-doris-connector/flink-doris-connector-base/src/main/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoad.java
+  s_8e35ce17f6a1a5::t_2d9b7c1d1dc186 310-313,812,816,818-836
+flink-doris-connector/flink-doris-connector-base/src/test/java/org/apache/doris/flink/sink/batch/DorisBatchStreamLoadFlushResultTest.java
+  s_8e35ce17f6a1a5::t_b8569ea19faa0e 479-481
+  s_8e35ce17f6a1a5::t_d33f5f52f85bb1 380-410,471-476,482-484
+  s_8e35ce17f6a1a5::t_b3187a6b173674 477-478,485,493
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "0a5501899ea501978763dcef9cd28b44e261164f",
+  "prompts": {},
+  "sessions": {
+    "s_8e35ce17f6a1a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9a6d-2b04-77e2-b949-287d12381946",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Roberto Serafin <roberto.serafin@lansweeper.com>"
+    }
+  }
+}
