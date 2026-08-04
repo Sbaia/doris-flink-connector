@@ -1,0 +1,156 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Publish observable flush POC package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - observable-flush-26.0.0-poc.13-build.*
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-observable-flush-26.0.0-poc.13
+  cancel-in-progress: false
+
+env:
+  FLINK_VERSION: 2.1.2
+  FLINK_MAJOR_VERSION: "2.1"
+  POC_VERSION: 26.0.0-poc.13
+  UPSTREAM_BASE_COMMIT: 825b7bbe9647d54398eed91870219f322c617967
+  JDK21_PATCH_COMMIT: c73add2959560899f92c2e3906d20cbc5d3282ae
+  OBSERVABLE_FLUSH_PATCH_COMMIT: e04ea44015a61e88baabc7b90645ae900cdb67ca
+  SERIALIZER_COMPATIBILITY_PATCH_COMMIT: 453df68a4eb86ac634aecd712f2922335463937d
+  CI_ISOLATION_PATCH_COMMIT: 0999292cc6568d456f6cca51fcf17ea52b9d69e4
+  LOGICAL_ROW_COUNT_PATCH_COMMIT: 4c5c02e019194594fa098c5def8c6d7f67774322
+  FLUSH_BYTES_PATCH_COMMIT: 580bbe817ebc6e725ebbd9ce8c9dfc8c938daddf
+  BUFFERED_BYTES_PATCH_COMMIT: 666656147a57ee512c94439df2ae687b48fc742d
+  ARROW_CLOSE_PATCH_COMMIT: a9b2d8b880f4239895578bcdd74de17d44a6f4fa
+  ZSTD_JNI_PATCH_COMMIT: 9eadc506372a0318816611b85f19737962081e12
+  PROFILE_COMPATIBILITY_PATCH_COMMIT: 0cf42f9e78fa33e48f5e7c1da80eaf8fcebf9440
+  CONCURRENT_TABLE_LOAD_PATCH_COMMIT: 14c2494fe0277b13c5750626b4ba1ec7d51eea21
+  BOUNDED_FLUSH_WAIT_PATCH_COMMIT: 0a5501899ea501978763dcef9cd28b44e261164f
+  PACKAGE_REPOSITORY: https://maven.pkg.github.com/Sbaia/doris-flink-connector
+
+jobs:
+  publish-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the immutable source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify source provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "${UPSTREAM_BASE_COMMIT}" HEAD
+          git merge-base --is-ancestor "${JDK21_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${OBSERVABLE_FLUSH_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${SERIALIZER_COMPATIBILITY_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${CI_ISOLATION_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${LOGICAL_ROW_COUNT_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${FLUSH_BYTES_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${BUFFERED_BYTES_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${ARROW_CLOSE_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${ZSTD_JNI_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${PROFILE_COMPATIBILITY_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${CONCURRENT_TABLE_LOAD_PATCH_COMMIT}" HEAD
+          git merge-base --is-ancestor "${BOUNDED_FLUSH_WAIT_PATCH_COMMIT}" HEAD
+          git diff --check "${UPSTREAM_BASE_COMMIT}" HEAD
+
+      - name: Set up JDK 21 and Maven package credentials
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Test and publish the POC reactor
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./mvnw \
+            -f flink-doris-connector/pom.xml \
+            -Pflink2,poc-release \
+            -pl flink-doris-connector-flink2 \
+            -am \
+            -Dflink.version="${FLINK_VERSION}" \
+            -Dflink.major.version="${FLINK_MAJOR_VERSION}" \
+            -Drevision="${POC_VERSION}" \
+            -DaltDeploymentRepository="github::default::${PACKAGE_REPOSITORY}" \
+            --batch-mode \
+            --no-transfer-progress \
+            deploy
+
+      - name: Resolve from an empty cache and verify convergence
+        id: verify
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          clean_repository="${RUNNER_TEMP}/poc-consumer-m2"
+          ./mvnw \
+            -f .github/poc-consumer/pom.xml \
+            -Dmaven.repo.local="${clean_repository}" \
+            -Ddoris.connector.version="${POC_VERSION}" \
+            --batch-mode \
+            --no-transfer-progress \
+            verify
+
+          local_jar="flink-doris-connector/flink-doris-connector-flink2/target/flink-doris-connector-${FLINK_MAJOR_VERSION}-${POC_VERSION}.jar"
+          resolved_jar="${clean_repository}/org/apache/doris/flink-doris-connector-${FLINK_MAJOR_VERSION}/${POC_VERSION}/flink-doris-connector-${FLINK_MAJOR_VERSION}-${POC_VERSION}.jar"
+          test -f "${local_jar}"
+          test -f "${resolved_jar}"
+
+          local_sha="$(sha256sum "${local_jar}" | cut -d' ' -f1)"
+          resolved_sha="$(sha256sum "${resolved_jar}" | cut -d' ' -f1)"
+          test "${local_sha}" = "${resolved_sha}"
+          printf '%s  %s\n' "${resolved_sha}" "flink-doris-connector-${FLINK_MAJOR_VERSION}-${POC_VERSION}.jar" > poc-checksums.sha256
+          printf 'sha256=%s\n' "${resolved_sha}" >> "${GITHUB_OUTPUT}"
+          printf 'source_commit=%s\n' "$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload checksum evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: observable-flush-${{ env.POC_VERSION }}-checksums
+          path: poc-checksums.sha256
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish verification summary
+        shell: bash
+        run: |
+          {
+            echo "### Observable flush POC"
+            echo "- Version: \`${POC_VERSION}\`"
+            echo "- Source: \`${{ steps.verify.outputs.source_commit }}\`"
+            echo "- SHA-256: \`${{ steps.verify.outputs.sha256 }}\`"
+            echo "- Clean-cache resolution and dependency convergence: passed"
+            echo "- Scope: personal POC only; not approved for production"
+          } >> "${GITHUB_STEP_SUMMARY}"

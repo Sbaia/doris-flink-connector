@@ -21,6 +21,7 @@ import org.apache.doris.flink.cfg.DorisExecutionOptions;
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.cfg.DorisReadOptions;
 import org.apache.doris.flink.sink.BackendUtil;
+import org.apache.doris.flink.sink.HttpTestUtil;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
 import org.apache.doris.flink.sink.writer.serializer.SimpleStringSerializer;
 import org.junit.After;
@@ -30,8 +31,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.MockedStatic;
 
+import java.lang.reflect.Field;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 public class TestDorisBatchWriter {
 
@@ -74,6 +80,60 @@ public class TestDorisBatchWriter {
         batchWriter.writeOneDorisRecord(DorisRecord.of(null));
         batchWriter.writeOneDorisRecord(DorisRecord.of("db", "tbl", "zhangsan,1".getBytes()));
         batchWriter.close();
+    }
+
+    @Test
+    public void flushAndWaitReturnsTheUnderlyingCompletedEpoch() throws Exception {
+        DorisOptions options =
+                DorisOptions.builder()
+                        .setFenodes("127.0.0.1:8030")
+                        .setBenodes("127.0.0.1:8040")
+                        .setTableIdentifier("db.tbl")
+                        .build();
+        DorisBatchWriter<String> batchWriter =
+                new DorisBatchWriter<>(
+                        1,
+                        1,
+                        new SimpleStringSerializer(),
+                        options,
+                        DorisReadOptions.builder().build(),
+                        DorisExecutionOptions.builder().setMaxRetries(0).build());
+        try {
+            DorisBatchStreamLoad loader = batchStreamLoadOf(batchWriter);
+            BackendUtil backendUtil = mock(BackendUtil.class);
+            when(backendUtil.getAvailableBackend(anyInt())).thenReturn("127.0.0.1:8040");
+            org.apache.http.impl.client.HttpClientBuilder httpClientBuilder =
+                    mock(org.apache.http.impl.client.HttpClientBuilder.class);
+            org.apache.http.impl.client.CloseableHttpClient httpClient =
+                    mock(org.apache.http.impl.client.CloseableHttpClient.class);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            org.apache.http.client.methods.CloseableHttpResponse response =
+                    HttpTestUtil.getResponse(
+                            "{\"TxnId\":9,\"Label\":\"writer-label\","
+                                    + "\"Status\":\"Success\",\"Message\":\"OK\","
+                                    + "\"NumberTotalRows\":1,\"NumberLoadedRows\":1,"
+                                    + "\"NumberFilteredRows\":0,"
+                                    + "\"NumberUnselectedRows\":0,\"LoadBytes\":3}",
+                            true);
+            when(httpClient.execute(any())).thenReturn(response);
+            loader.setBackendUtil(backendUtil);
+            loader.setHttpClientBuilder(httpClientBuilder);
+
+            batchWriter.writeOneDorisRecord(DorisRecord.of("one".getBytes()));
+            BatchFlushResult result = batchWriter.flushAndWait();
+
+            org.junit.Assert.assertEquals(1, result.getLoadResults().size());
+            org.junit.Assert.assertEquals(
+                    "writer-label", result.getLoadResults().get(0).getLabel());
+        } finally {
+            batchWriter.close();
+        }
+    }
+
+    private DorisBatchStreamLoad batchStreamLoadOf(DorisBatchWriter<?> writer) throws Exception {
+        Field field = DorisBatchWriter.class.getDeclaredField("batchStreamLoad");
+        field.setAccessible(true);
+        return (DorisBatchStreamLoad) field.get(writer);
     }
 
     @After

@@ -59,6 +59,14 @@ under the License.
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-base</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>${flink.python.id}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
+        </dependency>
 
         <!-- test -->
         <dependency>

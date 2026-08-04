@@ -431,7 +431,7 @@ public class DorisRowConverter implements Serializable {
             RowType.RowField rowField = fields.get(i);
             SerializationConverter converter = createNullableExternalConverter(rowField.getType());
             Object valTmp = converter.serialize(i, row);
-            value.put(rowField.getName(), valTmp.toString());
+            value.put(rowField.getName(), valTmp == null ? null : valTmp.toString());
         }
         return value;
     }

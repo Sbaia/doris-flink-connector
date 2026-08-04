@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Properties;
 
+import static org.apache.doris.flink.sink.writer.LoadConstants.ARROW;
 import static org.apache.doris.flink.sink.writer.LoadConstants.COMPRESS_TYPE;
 import static org.apache.doris.flink.sink.writer.LoadConstants.COMPRESS_TYPE_GZ;
 import static org.apache.doris.flink.sink.writer.LoadConstants.FORMAT_KEY;
@@ -45,6 +46,10 @@ public class DorisExecutionOptions implements Serializable {
     private static final int DEFAULT_BUFFER_FLUSH_MAX_ROWS = 500000;
     private static final int DEFAULT_BUFFER_FLUSH_MAX_BYTES = 100 * 1024 * 1024;
     private static final long DEFAULT_BUFFER_FLUSH_INTERVAL_MS = 10 * 1000;
+    public static final long DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS = 200L;
+    public static final long DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS = 60_000L;
+    public static final int DEFAULT_LOAD_CONCURRENCY = 1;
+    public static final int MAX_LOAD_CONCURRENCY = 64;
     private final int checkInterval;
     private final int maxRetries;
     private final int bufferSize;
@@ -69,6 +74,9 @@ public class DorisExecutionOptions implements Serializable {
     private final boolean ignoreUpdateBefore;
     private final WriteMode writeMode;
     private final boolean ignoreCommitError;
+    private final long loadVisibilityPollIntervalMs;
+    private final long loadVisibilityTimeoutMs;
+    private final int loadConcurrency;
 
     public DorisExecutionOptions(
             int checkInterval,
@@ -90,7 +98,109 @@ public class DorisExecutionOptions implements Serializable {
             boolean force2PC,
             WriteMode writeMode,
             boolean ignoreCommitError) {
+        this(
+                checkInterval,
+                maxRetries,
+                bufferSize,
+                bufferCount,
+                labelPrefix,
+                useCache,
+                httpUtf8Charset,
+                streamLoadProp,
+                enableDelete,
+                enable2PC,
+                enableBatchMode,
+                flushQueueSize,
+                bufferFlushMaxRows,
+                bufferFlushMaxBytes,
+                bufferFlushIntervalMs,
+                ignoreUpdateBefore,
+                force2PC,
+                writeMode,
+                ignoreCommitError,
+                DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS,
+                DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS);
+    }
+
+    public DorisExecutionOptions(
+            int checkInterval,
+            int maxRetries,
+            int bufferSize,
+            int bufferCount,
+            String labelPrefix,
+            boolean useCache,
+            boolean httpUtf8Charset,
+            Properties streamLoadProp,
+            Boolean enableDelete,
+            Boolean enable2PC,
+            boolean enableBatchMode,
+            int flushQueueSize,
+            int bufferFlushMaxRows,
+            int bufferFlushMaxBytes,
+            long bufferFlushIntervalMs,
+            boolean ignoreUpdateBefore,
+            boolean force2PC,
+            WriteMode writeMode,
+            boolean ignoreCommitError,
+            long loadVisibilityPollIntervalMs,
+            long loadVisibilityTimeoutMs) {
+        this(
+                checkInterval,
+                maxRetries,
+                bufferSize,
+                bufferCount,
+                labelPrefix,
+                useCache,
+                httpUtf8Charset,
+                streamLoadProp,
+                enableDelete,
+                enable2PC,
+                enableBatchMode,
+                flushQueueSize,
+                bufferFlushMaxRows,
+                bufferFlushMaxBytes,
+                bufferFlushIntervalMs,
+                ignoreUpdateBefore,
+                force2PC,
+                writeMode,
+                ignoreCommitError,
+                loadVisibilityPollIntervalMs,
+                loadVisibilityTimeoutMs,
+                DEFAULT_LOAD_CONCURRENCY);
+    }
+
+    public DorisExecutionOptions(
+            int checkInterval,
+            int maxRetries,
+            int bufferSize,
+            int bufferCount,
+            String labelPrefix,
+            boolean useCache,
+            boolean httpUtf8Charset,
+            Properties streamLoadProp,
+            Boolean enableDelete,
+            Boolean enable2PC,
+            boolean enableBatchMode,
+            int flushQueueSize,
+            int bufferFlushMaxRows,
+            int bufferFlushMaxBytes,
+            long bufferFlushIntervalMs,
+            boolean ignoreUpdateBefore,
+            boolean force2PC,
+            WriteMode writeMode,
+            boolean ignoreCommitError,
+            long loadVisibilityPollIntervalMs,
+            long loadVisibilityTimeoutMs,
+            int loadConcurrency) {
         Preconditions.checkArgument(maxRetries >= 0);
+        Preconditions.checkArgument(
+                loadVisibilityPollIntervalMs > 0, "loadVisibilityPollIntervalMs must be positive");
+        Preconditions.checkArgument(
+                loadVisibilityTimeoutMs > 0, "loadVisibilityTimeoutMs must be positive");
+        Preconditions.checkArgument(loadConcurrency > 0, "loadConcurrency must be positive");
+        Preconditions.checkArgument(
+                loadConcurrency <= MAX_LOAD_CONCURRENCY,
+                "loadConcurrency must not exceed " + MAX_LOAD_CONCURRENCY);
         this.checkInterval = checkInterval;
         this.maxRetries = maxRetries;
         this.bufferSize = bufferSize;
@@ -112,6 +222,9 @@ public class DorisExecutionOptions implements Serializable {
         this.ignoreUpdateBefore = ignoreUpdateBefore;
         this.writeMode = writeMode;
         this.ignoreCommitError = ignoreCommitError;
+        this.loadVisibilityPollIntervalMs = loadVisibilityPollIntervalMs;
+        this.loadVisibilityTimeoutMs = loadVisibilityTimeoutMs;
+        this.loadConcurrency = loadConcurrency;
     }
 
     public static Builder builder() {
@@ -223,6 +336,18 @@ public class DorisExecutionOptions implements Serializable {
         return ignoreCommitError;
     }
 
+    public long getLoadVisibilityPollIntervalMs() {
+        return loadVisibilityPollIntervalMs;
+    }
+
+    public long getLoadVisibilityTimeoutMs() {
+        return loadVisibilityTimeoutMs;
+    }
+
+    public int getLoadConcurrency() {
+        return loadConcurrency;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -246,6 +371,9 @@ public class DorisExecutionOptions implements Serializable {
                 && enableBatchMode == that.enableBatchMode
                 && ignoreUpdateBefore == that.ignoreUpdateBefore
                 && ignoreCommitError == that.ignoreCommitError
+                && loadVisibilityPollIntervalMs == that.loadVisibilityPollIntervalMs
+                && loadVisibilityTimeoutMs == that.loadVisibilityTimeoutMs
+                && loadConcurrency == that.loadConcurrency
                 && Objects.equals(labelPrefix, that.labelPrefix)
                 && Objects.equals(streamLoadProp, that.streamLoadProp)
                 && Objects.equals(enableDelete, that.enableDelete)
@@ -274,7 +402,10 @@ public class DorisExecutionOptions implements Serializable {
                 enableBatchMode,
                 ignoreUpdateBefore,
                 writeMode,
-                ignoreCommitError);
+                ignoreCommitError,
+                loadVisibilityPollIntervalMs,
+                loadVisibilityTimeoutMs,
+                loadConcurrency);
     }
 
     /** Builder of {@link DorisExecutionOptions}. */
@@ -303,6 +434,27 @@ public class DorisExecutionOptions implements Serializable {
         private boolean ignoreUpdateBefore = true;
         private WriteMode writeMode = WriteMode.STREAM_LOAD;
         private boolean ignoreCommitError = false;
+        private long loadVisibilityPollIntervalMs = DEFAULT_LOAD_VISIBILITY_POLL_INTERVAL_MS;
+        private long loadVisibilityTimeoutMs = DEFAULT_LOAD_VISIBILITY_TIMEOUT_MS;
+        private int loadConcurrency = DEFAULT_LOAD_CONCURRENCY;
+
+        /** Sets the interval between Stream Load transaction visibility checks. */
+        public Builder setLoadVisibilityPollIntervalMs(long loadVisibilityPollIntervalMs) {
+            this.loadVisibilityPollIntervalMs = loadVisibilityPollIntervalMs;
+            return this;
+        }
+
+        /** Sets the maximum time to wait for a Stream Load transaction to become visible. */
+        public Builder setLoadVisibilityTimeoutMs(long loadVisibilityTimeoutMs) {
+            this.loadVisibilityTimeoutMs = loadVisibilityTimeoutMs;
+            return this;
+        }
+
+        /** Sets the maximum number of concurrent Stream Loads per sink writer. */
+        public Builder setLoadConcurrency(int loadConcurrency) {
+            this.loadConcurrency = loadConcurrency;
+            return this;
+        }
 
         /**
          * Sets the checkInterval to check exception with the interval while loading, The default is
@@ -533,8 +685,10 @@ public class DorisExecutionOptions implements Serializable {
                 streamLoadProp.put(READ_JSON_BY_LINE, true);
             }
 
-            // Enable gz compression by default
-            if (streamLoadProp != null && !streamLoadProp.containsKey(COMPRESS_TYPE)) {
+            // Doris' Arrow reader expects an Arrow IPC stream, not transport-level GZIP bytes.
+            if (streamLoadProp != null
+                    && !ARROW.equalsIgnoreCase(streamLoadProp.getProperty(FORMAT_KEY, ""))
+                    && !streamLoadProp.containsKey(COMPRESS_TYPE)) {
                 streamLoadProp.put(COMPRESS_TYPE, COMPRESS_TYPE_GZ);
             }
 
@@ -569,7 +723,10 @@ public class DorisExecutionOptions implements Serializable {
                     ignoreUpdateBefore,
                     force2PC,
                     writeMode,
-                    ignoreCommitError);
+                    ignoreCommitError,
+                    loadVisibilityPollIntervalMs,
+                    loadVisibilityTimeoutMs,
+                    loadConcurrency);
         }
     }
 }

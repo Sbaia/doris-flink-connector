@@ -45,6 +45,17 @@ public class DorisExecutionOptionsTest {
     }
 
     @Test
+    public void testArrowDoesNotEnableTransportGzipByDefault() {
+        Properties properties = new Properties();
+        properties.put("format", "arrow");
+
+        DorisExecutionOptions executionOptions =
+                DorisExecutionOptions.builder().setStreamLoadProp(properties).build();
+
+        Assert.assertFalse(executionOptions.getStreamLoadProp().containsKey("compress_type"));
+    }
+
+    @Test
     public void testEquals() {
         DorisExecutionOptions exceptOptions =
                 DorisExecutionOptions.builder()
@@ -160,5 +171,43 @@ public class DorisExecutionOptionsTest {
     public void testMaxRetry() {
         DorisExecutionOptions.Builder builder = DorisExecutionOptions.builder().setMaxRetries(-1);
         builder.build();
+    }
+
+    @Test
+    public void testVisibleLoadPollingConfiguration() {
+        DorisExecutionOptions defaults = DorisExecutionOptions.builder().build();
+        Assert.assertEquals(200L, defaults.getLoadVisibilityPollIntervalMs());
+        Assert.assertEquals(60_000L, defaults.getLoadVisibilityTimeoutMs());
+
+        DorisExecutionOptions configured =
+                DorisExecutionOptions.builder()
+                        .setLoadVisibilityPollIntervalMs(25L)
+                        .setLoadVisibilityTimeoutMs(5_000L)
+                        .build();
+        Assert.assertEquals(25L, configured.getLoadVisibilityPollIntervalMs());
+        Assert.assertEquals(5_000L, configured.getLoadVisibilityTimeoutMs());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testVisibleLoadPollingConfigurationMustBePositive() {
+        DorisExecutionOptions.builder().setLoadVisibilityTimeoutMs(0L).build();
+    }
+
+    @Test
+    public void testLoadConcurrencyDefaultsToOneAndCanBeConfigured() {
+        Assert.assertEquals(1, DorisExecutionOptions.builder().build().getLoadConcurrency());
+        Assert.assertEquals(
+                4,
+                DorisExecutionOptions.builder().setLoadConcurrency(4).build().getLoadConcurrency());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testLoadConcurrencyMustBePositive() {
+        DorisExecutionOptions.builder().setLoadConcurrency(0).build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testLoadConcurrencyHasASafeUpperBound() {
+        DorisExecutionOptions.builder().setLoadConcurrency(65).build();
     }
 }

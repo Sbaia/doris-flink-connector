@@ -14,34 +14,5 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
----
-name: Run E2ECases Flink1.x
-on:
-  pull_request:
-  push:
 
-jobs:
-  build-extension:
-    name: "Run E2ECases"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-
-    - name: Setup java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '8'
-
-    - name: Run E2ECases (Flink1 module)
-      run: |
-        cd flink-doris-connector && mvn test \
-          -Pflink1 -pl flink-doris-connector-it -am \
-          -Dsurefire.failIfNoSpecifiedTests=false \
-          -Dtest="*E2ECase" \
-          -Dimage="apache/doris:doris-all-in-one-2.1.0"
+org.apache.doris.flink.sink.writer.arrow.Flink2ZstdArrowStreamWriterProvider

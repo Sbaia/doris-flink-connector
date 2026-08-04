@@ -129,10 +129,17 @@ public class DorisBatchWriter<IN> {
     }
 
     public void flush(boolean flush) throws IOException, InterruptedException {
+        flushAndWait();
+    }
+
+    /**
+     * Flushes serializer and Stream Load buffers, returning the completed non-overlapping epoch.
+     */
+    public BatchFlushResult flushAndWait() throws IOException, InterruptedException {
         checkFlushException();
         writeOneDorisRecord(serializer.flush());
         LOG.info("checkpoint flush triggered.");
-        batchStreamLoad.checkpointFlush();
+        return batchStreamLoad.flushAndWait();
     }
 
     public Collection<DorisCommittable> prepareCommit() throws IOException, InterruptedException {
@@ -146,9 +153,21 @@ public class DorisBatchWriter<IN> {
     }
 
     public void writeOneDorisRecord(DorisRecord record) throws InterruptedException {
+        writeOneDorisRecord(record, 1L);
+    }
+
+    /** Writes a pre-serialized payload containing one or more logical Doris rows. */
+    public void writeOneDorisRecord(DorisRecord record, long logicalRowCount)
+            throws InterruptedException {
+        writeOneDorisRecordAndGetBufferedBytes(record, logicalRowCount);
+    }
+
+    /** Writes a pre-serialized payload and returns the exact bytes retained by the load buffer. */
+    public int writeOneDorisRecordAndGetBufferedBytes(DorisRecord record, long logicalRowCount)
+            throws InterruptedException {
         if (record == null || record.getRow() == null) {
             // ddl or value is null
-            return;
+            return 0;
         }
         String db = this.database;
         String tbl = this.table;
@@ -157,7 +176,8 @@ public class DorisBatchWriter<IN> {
             db = record.getDatabase();
             tbl = record.getTable();
         }
-        batchStreamLoad.writeRecord(db, tbl, record.getRow());
+        return batchStreamLoad.writeRecordAndGetBufferedBytes(
+                db, tbl, record.getRow(), logicalRowCount);
     }
 
     public void close() throws Exception {

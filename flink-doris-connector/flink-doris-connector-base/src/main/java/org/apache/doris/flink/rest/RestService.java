@@ -51,6 +51,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -62,6 +63,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -98,6 +100,59 @@ public class RestService implements Serializable {
     private static final String QUERY_PLAN_API = "http://%s/api/%s/%s/_query_plan";
     private static final String STATEMENT_EXEC_API =
             "http://%s/api/query/default_cluster/information_schema";
+
+    /** Returns the current state for a Stream Load label from an available FE node. */
+    public static String getLoadState(
+            DorisOptions options,
+            DorisReadOptions readOptions,
+            String database,
+            String label,
+            Logger logger)
+            throws ConnectedFailedException {
+        if (StringUtils.isBlank(database) || StringUtils.isBlank(label)) {
+            throw new DorisRuntimeException(
+                    "Database and label are required for load-state lookup");
+        }
+        ConnectedFailedException lastFailure = null;
+        for (String feNode : allEndpoints(options.getFenodes(), logger)) {
+            try {
+                URIBuilder uriBuilder = new URIBuilder("http://" + feNode);
+                uriBuilder.setPathSegments("api", database, "get_load_state");
+                uriBuilder.addParameter("label", label);
+                String response =
+                        send(options, readOptions, new HttpGet(uriBuilder.build()), logger);
+                return parseLoadState(response);
+            } catch (ConnectedFailedException e) {
+                lastFailure = e;
+                logger.warn("Load-state request to FE {} failed; trying the next FE", feNode);
+            } catch (IOException | URISyntaxException e) {
+                throw new DorisRuntimeException("Unable to parse Doris load-state response", e);
+            }
+        }
+        if (lastFailure != null) {
+            throw lastFailure;
+        }
+        throw new DorisRuntimeException("No Doris FE is available for load-state lookup");
+    }
+
+    @VisibleForTesting
+    static String parseLoadState(String response) throws IOException {
+        JsonNode data = objectMapper.readTree(response);
+        if (data == null || data.isNull()) {
+            throw new DorisRuntimeException("Doris returned no transaction state");
+        }
+        if (data.isTextual()) {
+            return data.asText();
+        }
+        JsonNode state = data.get("state");
+        if (state == null) {
+            state = data.get("State");
+        }
+        if (state == null || !state.isTextual()) {
+            throw new DorisRuntimeException("Doris returned a malformed transaction state");
+        }
+        return state.asText();
+    }
 
     /**
      * send request to Doris FE and get response json string.

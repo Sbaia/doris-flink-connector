@@ -99,6 +99,7 @@ under the License.
         <log4j.version>2.17.1</log4j.version>
         <arrow.version>15.0.2</arrow.version>
         <adbc.version>0.12.0</adbc.version>
+        <zstd-jni.version>1.5.7-6</zstd-jni.version>
     </properties>
 
     <modules>
@@ -182,6 +183,11 @@ under the License.
                 <groupId>org.apache.arrow</groupId>
                 <artifactId>arrow-memory-netty</artifactId>
                 <version>${arrow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
             </dependency>
             <!--  jackson  -->
             <dependency>
@@ -415,10 +421,8 @@ under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.2.5</version>
                 <configuration>
-                    <!-- Activate the use of TCP to transmit events to the plugin -->
-                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                     <!-- skip itcase e2ecase in mvn package
                     <includes>
                           <include>**/*.java</include>
@@ -496,6 +500,40 @@ under the License.
             <modules>
                 <module>flink-doris-connector-flink2</module>
             </modules>
+        </profile>
+
+        <!-- Fork-only packaging support for immutable POC artifacts. -->
+        <profile>
+            <id>poc-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>flatten-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <configuration>
+                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                            <updatePomFile>true</updatePomFile>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>flatten-poc-poms</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>flatten</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>clean-flattened-poc-poms</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>

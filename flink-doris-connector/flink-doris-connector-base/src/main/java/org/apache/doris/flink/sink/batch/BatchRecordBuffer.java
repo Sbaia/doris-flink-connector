@@ -30,12 +30,15 @@ public class BatchRecordBuffer {
     private LinkedList<byte[]> buffer;
     private byte[] lineDelimiter;
     private int numOfRecords = 0;
+    private long numOfLogicalRows = 0;
     private long bufferSizeBytes = 0;
     private boolean loadBatchFirstRecord = true;
     private String database;
     private String table;
     private final long createTime = System.currentTimeMillis();
     private long retainTime = 0;
+    private long firstSequence;
+    private long lastSequence;
 
     public BatchRecordBuffer() {
         this.buffer = new LinkedList<>();
@@ -51,6 +54,14 @@ public class BatchRecordBuffer {
     }
 
     public int insert(byte[] record) {
+        return insert(record, 1L);
+    }
+
+    /** Inserts one physical payload containing the supplied number of logical Doris rows. */
+    public int insert(byte[] record, long logicalRowCount) {
+        if (logicalRowCount <= 0) {
+            throw new IllegalArgumentException("Logical row count must be positive");
+        }
         int recordSize = record.length;
         if (loadBatchFirstRecord) {
             loadBatchFirstRecord = false;
@@ -61,6 +72,7 @@ public class BatchRecordBuffer {
         }
         this.buffer.add(record);
         setNumOfRecords(this.numOfRecords + 1);
+        this.numOfLogicalRows = Math.addExact(this.numOfLogicalRows, logicalRowCount);
         setBufferSizeBytes(this.bufferSizeBytes + record.length);
         return recordSize;
     }
@@ -83,9 +95,12 @@ public class BatchRecordBuffer {
     public void clear() {
         this.buffer.clear();
         this.numOfRecords = 0;
+        this.numOfLogicalRows = 0;
         this.bufferSizeBytes = 0;
         this.labelName = null;
         this.loadBatchFirstRecord = true;
+        this.firstSequence = 0L;
+        this.lastSequence = 0L;
     }
 
     public LinkedList<byte[]> getBuffer() {
@@ -97,6 +112,17 @@ public class BatchRecordBuffer {
      */
     public int getNumOfRecords() {
         return numOfRecords;
+    }
+
+    public long getNumOfLogicalRows() {
+        return numOfLogicalRows;
+    }
+
+    public void addLogicalRows(long logicalRows) {
+        if (logicalRows < 0) {
+            throw new IllegalArgumentException("Logical row count must not be negative");
+        }
+        numOfLogicalRows = Math.addExact(numOfLogicalRows, logicalRows);
     }
 
     /**
@@ -152,5 +178,41 @@ public class BatchRecordBuffer {
         // the write will not be triggered in the next interval,
         // so multiply it by 1.5 to trigger it as early as possible.
         return (System.currentTimeMillis() - createTime) * 1.5 > retainTime;
+    }
+
+    public void setSequence(long sequence) {
+        if (sequence <= 0) {
+            throw new IllegalArgumentException("Sequence must be positive");
+        }
+        this.firstSequence = sequence;
+        this.lastSequence = sequence;
+    }
+
+    public void includeSequenceRange(BatchRecordBuffer other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Merged buffer must not be null");
+        }
+        if (firstSequence == 0L && other.firstSequence == 0L) {
+            // Utility callers that merge buffers before enqueue do not yet have load sequences.
+            return;
+        }
+        if (other.firstSequence <= 0) {
+            throw new IllegalArgumentException("Merged buffer must have a sequence");
+        }
+        if (firstSequence <= 0) {
+            firstSequence = other.firstSequence;
+            lastSequence = other.lastSequence;
+            return;
+        }
+        firstSequence = Math.min(firstSequence, other.firstSequence);
+        lastSequence = Math.max(lastSequence, other.lastSequence);
+    }
+
+    public long getFirstSequence() {
+        return firstSequence;
+    }
+
+    public long getLastSequence() {
+        return lastSequence;
     }
 }
